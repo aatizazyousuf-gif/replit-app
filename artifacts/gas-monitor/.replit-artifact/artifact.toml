@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Gas Monitor"
+version = "1.0.0"
+id = "artifacts/gas-monitor"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22660
+
+[services.development]
+run = "pnpm --filter @workspace/gas-monitor run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/gas-monitor", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/gas-monitor/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22660"
+BASE_PATH = "/"

@@ -1,0 +1,956 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Gas Monitor API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: devices
+    description: ESP32 device management
+  - name: readings
+    description: Sensor readings
+  - name: alerts
+    description: Gas alerts
+  - name: refill-orders
+    description: LPG refill orders
+  - name: messages
+    description: Chat messages
+  - name: supplier
+    description: Supplier operations
+  - name: homeowner
+    description: Homeowner operations
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # ── Auth ──────────────────────────────────────────────────────────────
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegistration"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLogin"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: OK
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  # ── Devices ───────────────────────────────────────────────────────────
+  /devices:
+    get:
+      operationId: getDevices
+      tags: [devices]
+      summary: List devices for current homeowner
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Device"
+    post:
+      operationId: createDevice
+      tags: [devices]
+      summary: Register a new ESP32 device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+
+  /devices/{id}:
+    get:
+      operationId: getDevice
+      tags: [devices]
+      summary: Get device by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateDevice
+      tags: [devices]
+      summary: Update device
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+    delete:
+      operationId: deleteDevice
+      tags: [devices]
+      summary: Delete device
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: No content
+
+  # ── Sensor Readings ───────────────────────────────────────────────────
+  /devices/{deviceId}/readings:
+    get:
+      operationId: getReadings
+      tags: [readings]
+      summary: Get last 24 sensor readings for a device
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SensorReading"
+    post:
+      operationId: createReading
+      tags: [readings]
+      summary: Submit a sensor reading (from ESP32)
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorReadingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorReading"
+
+  /devices/{deviceId}/readings/latest:
+    get:
+      operationId: getLatestReading
+      tags: [readings]
+      summary: Get the most recent sensor reading
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorReading"
+        "404":
+          description: No readings yet
+
+  # ── Alerts ────────────────────────────────────────────────────────────
+  /alerts:
+    get:
+      operationId: getAlerts
+      tags: [alerts]
+      summary: Get alerts for current user
+      parameters:
+        - name: resolved
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+
+  /alerts/{id}/resolve:
+    patch:
+      operationId: resolveAlert
+      tags: [alerts]
+      summary: Mark alert as resolved
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+
+  # ── Refill Orders ─────────────────────────────────────────────────────
+  /refill-orders:
+    get:
+      operationId: getRefillOrders
+      tags: [refill-orders]
+      summary: List refill orders (homeowner sees own; supplier sees assigned)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RefillOrder"
+    post:
+      operationId: createRefillOrder
+      tags: [refill-orders]
+      summary: Place a new refill order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefillOrderInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefillOrder"
+
+  /refill-orders/{id}:
+    get:
+      operationId: getRefillOrder
+      tags: [refill-orders]
+      summary: Get refill order detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefillOrder"
+    patch:
+      operationId: updateRefillOrder
+      tags: [refill-orders]
+      summary: Update refill order status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefillOrderUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefillOrder"
+
+  # ── Messages ──────────────────────────────────────────────────────────
+  /messages:
+    get:
+      operationId: getMessages
+      tags: [messages]
+      summary: Get conversation messages with a user
+      parameters:
+        - name: withUserId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendMessage
+      tags: [messages]
+      summary: Send a message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /messages/conversations:
+    get:
+      operationId: getConversations
+      tags: [messages]
+      summary: List all conversations (with last message)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+
+  # ── Supplier ──────────────────────────────────────────────────────────
+  /supplier/customers:
+    get:
+      operationId: getSupplierCustomers
+      tags: [supplier]
+      summary: List linked homeowner customers
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SupplierCustomer"
+    post:
+      operationId: linkCustomer
+      tags: [supplier]
+      summary: Link a homeowner as a customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerLinkInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupplierCustomer"
+
+  /supplier/customers/{id}:
+    delete:
+      operationId: unlinkCustomer
+      tags: [supplier]
+      summary: Remove a customer link
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: No content
+
+  /supplier/inventory:
+    get:
+      operationId: getInventory
+      tags: [supplier]
+      summary: Get supplier inventory
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryItem"
+    post:
+      operationId: createInventoryItem
+      tags: [supplier]
+      summary: Add inventory item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryItemInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+
+  /supplier/inventory/{id}:
+    patch:
+      operationId: updateInventoryItem
+      tags: [supplier]
+      summary: Update inventory item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryItemUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+
+  /supplier/dispatches:
+    get:
+      operationId: getDispatches
+      tags: [supplier]
+      summary: List dispatches
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Dispatch"
+    post:
+      operationId: createDispatch
+      tags: [supplier]
+      summary: Create a dispatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DispatchInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dispatch"
+
+  /supplier/dispatches/{id}:
+    patch:
+      operationId: updateDispatch
+      tags: [supplier]
+      summary: Update dispatch status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DispatchUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dispatch"
+
+  /supplier/summary:
+    get:
+      operationId: getSupplierSummary
+      tags: [supplier]
+      summary: Supplier dashboard summary (active dispatches, pending orders, revenue)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupplierSummary"
+
+  /supplier/analytics/revenue:
+    get:
+      operationId: getRevenueAnalytics
+      tags: [supplier]
+      summary: Revenue analytics by period
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [daily, weekly, monthly]
+            default: monthly
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenueDataPoint"
+
+  # ── Homeowner ─────────────────────────────────────────────────────────
+  /homeowner/summary:
+    get:
+      operationId: getHomeownerSummary
+      tags: [homeowner]
+      summary: Homeowner dashboard summary (gas level, active alerts, active order)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HomeownerSummary"
+
+  /homeowner/analytics/usage:
+    get:
+      operationId: getUsageAnalytics
+      tags: [homeowner]
+      summary: Gas usage analytics
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [daily, weekly, monthly]
+            default: daily
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UsageDataPoint"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    # ── Auth ──────────────────────────────────────────────────────────
+    UserRegistration:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name:    { type: string }
+        email:   { type: string }
+        password: { type: string, minLength: 6 }
+        role:    { type: string, enum: [homeowner, supplier] }
+
+    UserLogin:
+      type: object
+      required: [email, password]
+      properties:
+        email:    { type: string }
+        password: { type: string }
+
+
+    User:
+      type: object
+      required: [id, name, email, role, createdAt]
+      properties:
+        id:        { type: integer }
+        name:      { type: string }
+        email:     { type: string }
+        role:      { type: string, enum: [homeowner, supplier] }
+        createdAt: { type: string, format: date-time }
+
+    AuthResponse:
+      type: object
+      required: [user]
+      properties:
+        user: { $ref: "#/components/schemas/User" }
+
+    # ── Devices ───────────────────────────────────────────────────────
+    Device:
+      type: object
+      required: [id, userId, deviceSerial, name, status, createdAt]
+      properties:
+        id:           { type: integer }
+        userId:       { type: integer }
+        deviceSerial: { type: string }
+        name:         { type: string }
+        status:       { type: string, enum: [online, offline, calibrating] }
+        wifiNetwork:  { type: ["string", "null"] }
+        createdAt:    { type: string, format: date-time }
+
+    DeviceInput:
+      type: object
+      required: [deviceSerial, name]
+      properties:
+        deviceSerial: { type: string }
+        name:         { type: string }
+        wifiNetwork:  { type: string }
+
+    DeviceUpdate:
+      type: object
+      properties:
+        name:        { type: string }
+        status:      { type: string, enum: [online, offline, calibrating] }
+        wifiNetwork: { type: string }
+
+    # ── Sensor Readings ───────────────────────────────────────────────
+    SensorReading:
+      type: object
+      required: [id, deviceId, gasLevelPercent, pressurePa, gasDetected, createdAt]
+      properties:
+        id:             { type: integer }
+        deviceId:       { type: integer }
+        gasLevelPercent: { type: number }
+        pressurePa:     { type: number }
+        gasDetected:    { type: boolean }
+        createdAt:      { type: string, format: date-time }
+
+    SensorReadingInput:
+      type: object
+      required: [gasLevelPercent, pressurePa, gasDetected]
+      properties:
+        gasLevelPercent: { type: number }
+        pressurePa:      { type: number }
+        gasDetected:     { type: boolean }
+
+    # ── Alerts ────────────────────────────────────────────────────────
+    Alert:
+      type: object
+      required: [id, deviceId, userId, type, message, severity, createdAt]
+      properties:
+        id:         { type: integer }
+        deviceId:   { type: integer }
+        userId:     { type: integer }
+        type:       { type: string, enum: [gas_leak, low_level, battery, offline] }
+        message:    { type: string }
+        severity:   { type: string, enum: [info, warning, critical] }
+        resolvedAt: { type: ["string", "null"] }
+        createdAt:  { type: string, format: date-time }
+
+    # ── Refill Orders ─────────────────────────────────────────────────
+    RefillOrder:
+      type: object
+      required: [id, homeownerId, status, deliveryType, volumeGallons, totalPrice, createdAt]
+      properties:
+        id:               { type: integer }
+        homeownerId:      { type: integer }
+        supplierId:       { type: ["integer", "null"] }
+        status:           { type: string, enum: [pending, dispatched, en_route, delivered, cancelled] }
+        deliveryType:     { type: string, enum: [standard, express, emergency] }
+        volumeGallons:    { type: number }
+        totalPrice:       { type: number }
+        deliveryFee:      { type: number }
+        notes:            { type: ["string", "null"] }
+        estimatedArrival: { type: ["string", "null"] }
+        driverName:       { type: ["string", "null"] }
+        createdAt:        { type: string, format: date-time }
+
+    RefillOrderInput:
+      type: object
+      required: [deliveryType, volumeGallons]
+      properties:
+        supplierId:    { type: integer }
+        deliveryType:  { type: string, enum: [standard, express, emergency] }
+        volumeGallons: { type: number }
+        notes:         { type: string }
+
+    RefillOrderUpdate:
+      type: object
+      properties:
+        status:           { type: string, enum: [pending, dispatched, en_route, delivered, cancelled] }
+        supplierId:       { type: integer }
+        estimatedArrival: { type: string }
+        driverName:       { type: string }
+
+    # ── Messages ──────────────────────────────────────────────────────
+    Message:
+      type: object
+      required: [id, senderId, receiverId, content, sentAt]
+      properties:
+        id:         { type: integer }
+        senderId:   { type: integer }
+        receiverId: { type: integer }
+        content:    { type: string }
+        sentAt:     { type: string, format: date-time }
+        senderName: { type: string }
+
+    MessageInput:
+      type: object
+      required: [receiverId, content]
+      properties:
+        receiverId: { type: integer }
+        content:    { type: string }
+
+    Conversation:
+      type: object
+      required: [userId, userName, userRole, lastMessage, lastMessageAt]
+      properties:
+        userId:        { type: integer }
+        userName:      { type: string }
+        userRole:      { type: string }
+        lastMessage:   { type: string }
+        lastMessageAt: { type: string, format: date-time }
+        unreadCount:   { type: integer }
+
+    # ── Supplier ──────────────────────────────────────────────────────
+    SupplierCustomer:
+      type: object
+      required: [id, supplierId, homeownerId, homeownerName, homeownerEmail, linkedAt]
+      properties:
+        id:             { type: integer }
+        supplierId:     { type: integer }
+        homeownerId:    { type: integer }
+        homeownerName:  { type: string }
+        homeownerEmail: { type: string }
+        gasLevelPercent: { type: ["number", "null"] }
+        deviceCount:    { type: integer }
+        linkedAt:       { type: string, format: date-time }
+
+    CustomerLinkInput:
+      type: object
+      required: [homeownerEmail]
+      properties:
+        homeownerEmail: { type: string }
+
+    InventoryItem:
+      type: object
+      required: [id, supplierId, cylinderType, quantityAvailable, updatedAt]
+      properties:
+        id:                { type: integer }
+        supplierId:        { type: integer }
+        cylinderType:      { type: string }
+        quantityAvailable: { type: integer }
+        pricePerUnit:      { type: number }
+        updatedAt:         { type: string, format: date-time }
+
+    InventoryItemInput:
+      type: object
+      required: [cylinderType, quantityAvailable]
+      properties:
+        cylinderType:      { type: string }
+        quantityAvailable: { type: integer }
+        pricePerUnit:      { type: number }
+
+    InventoryItemUpdate:
+      type: object
+      properties:
+        quantityAvailable: { type: integer }
+        pricePerUnit:      { type: number }
+
+    Dispatch:
+      type: object
+      required: [id, supplierId, orderId, status, createdAt]
+      properties:
+        id:          { type: integer }
+        supplierId:  { type: integer }
+        orderId:     { type: integer }
+        driverName:  { type: ["string", "null"] }
+        truckNumber: { type: ["string", "null"] }
+        status:      { type: string, enum: [pending, en_route, delivered, cancelled] }
+        notes:       { type: ["string", "null"] }
+        customerName: { type: ["string", "null"] }
+        address:     { type: ["string", "null"] }
+        createdAt:   { type: string, format: date-time }
+
+    DispatchInput:
+      type: object
+      required: [orderId]
+      properties:
+        orderId:     { type: integer }
+        driverName:  { type: string }
+        truckNumber: { type: string }
+        notes:       { type: string }
+
+    DispatchUpdate:
+      type: object
+      properties:
+        status:      { type: string, enum: [pending, en_route, delivered, cancelled] }
+        driverName:  { type: string }
+        truckNumber: { type: string }
+        notes:       { type: string }
+
+    SupplierSummary:
+      type: object
+      required: [activeDispatches, pendingOrders, totalCustomers, monthlyRevenue, recentOrders]
+      properties:
+        activeDispatches: { type: integer }
+        pendingOrders:    { type: integer }
+        totalCustomers:   { type: integer }
+        monthlyRevenue:   { type: number }
+        recentOrders:
+          type: array
+          items:
+            $ref: "#/components/schemas/RefillOrder"
+
+    RevenueDataPoint:
+      type: object
+      required: [label, revenue, orders]
+      properties:
+        label:   { type: string }
+        revenue: { type: number }
+        orders:  { type: integer }
+
+    HomeownerSummary:
+      type: object
+      required: [gasLevelPercent, activeAlerts, activeOrder, device]
+      properties:
+        gasLevelPercent: { type: ["number", "null"] }
+        pressurePa:      { type: ["number", "null"] }
+        gasDetected:     { type: ["boolean", "null"] }
+        activeAlerts:    { type: integer }
+        activeOrder:     { $ref: "#/components/schemas/RefillOrder", nullable: true }
+        device:          { $ref: "#/components/schemas/Device", nullable: true }
+        estimatedDaysLeft: { type: ["integer", "null"] }
+
+    UsageDataPoint:
+      type: object
+      required: [label, avgLevel, minLevel, maxLevel]
+      properties:
+        label:    { type: string }
+        avgLevel: { type: number }
+        minLevel: { type: number }
+        maxLevel: { type: number }

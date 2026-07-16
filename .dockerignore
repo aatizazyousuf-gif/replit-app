@@ -1,0 +1,10 @@
+node_modules
+**/node_modules
+**/dist
+**/build
+**/.gradle
+artifacts/gas-monitor
+artifacts/gas-monitor-mobile
+.git
+.github
+*.tsbuildinfo
