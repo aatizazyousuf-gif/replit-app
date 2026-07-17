@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isLoading) return;
     
     // Non-authed user trying to access protected routes
-    if (!currentUser && location !== "/login" && location !== "/" && location !== "/register") {
+    if (!currentUser && location !== "/login" && location !== "/register") {
       setLocation("/login");
       return;
     }
