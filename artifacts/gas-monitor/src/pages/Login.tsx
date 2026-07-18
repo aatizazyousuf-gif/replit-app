@@ -112,7 +112,8 @@ export default function Login() {
                   <FormItem>
                     <Label className="text-[var(--color-on-surface)]">Email</Label>
                     <FormControl>
-                      <Input type="email" autoComplete="email" placeholder="name@example.com" {...field} className="bg-[var(--color-surface)] border-[var(--color-outline-variant)] focus-visible:ring-[var(--color-primary)]" />                    </FormControl>
+                      <Input type="email" autoComplete="email" placeholder="name@example.com" {...field} className="bg-[var(--color-surface)] border-[var(--color-outline-variant)] focus-visible:ring-[var(--color-primary)]" />
+                    </FormControl>
                     <FormMessage className="text-[var(--color-error)]" />
                   </FormItem>
                 )}
@@ -124,7 +125,8 @@ export default function Login() {
                   <FormItem>
                     <Label className="text-[var(--color-on-surface)]">Password</Label>
                     <FormControl>
-                      <Input type="password" autoComplete="current-password" placeholder="••••••••" {...field} className="bg-[var(--color-surface)] border-[var(--color-outline-variant)] focus-visible:ring-[var(--color-primary)]" />                    </FormControl>
+                      <Input type="password" autoComplete="current-password" placeholder="••••••••" {...field} className="bg-[var(--color-surface)] border-[var(--color-outline-variant)] focus-visible:ring-[var(--color-primary)]" />
+                    </FormControl>
                     <FormMessage className="text-[var(--color-error)]" />
                   </FormItem>
                 )}
@@ -144,7 +146,8 @@ export default function Login() {
                   <FormItem>
                     <Label className="text-[var(--color-on-surface)]">Full Name</Label>
                     <FormControl>
-                      <Input type="text" autoComplete="name" placeholder="John Doe" {...field} className="bg-[var(--color-surface)] border-[var(--color-outline-variant)] focus-visible:ring-[var(--color-primary)]" />                    </FormControl>
+                      <Input type="text" autoComplete="name" placeholder="John Doe" {...field} className="bg-[var(--color-surface)] border-[var(--color-outline-variant)] focus-visible:ring-[var(--color-primary)]" />
+                    </FormControl>
                     <FormMessage className="text-[var(--color-error)]" />
                   </FormItem>
                 )}
