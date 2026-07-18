@@ -1,7 +1,11 @@
 import crypto from "crypto";
 import { Request, Response, NextFunction } from "express";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, devicesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+
+export function generateDeviceApiKey(): string {
+  return crypto.randomBytes(24).toString("hex");
+}
 
 export function hashPassword(password: string): string {
   const salt = "gas-monitor-salt-v1";
@@ -58,6 +62,25 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     return;
   }
   (req as any).user = user;
+  next();
+}
+
+// Used by hardware (ESP32) to authenticate instead of a browser session cookie.
+// The device sends its API key in the "X-Device-Key" header.
+export async function requireDeviceAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const apiKey = req.headers["x-device-key"];
+  if (!apiKey || typeof apiKey !== "string") {
+    res.status(401).json({ error: "Missing X-Device-Key header" });
+    return;
+  }
+  const raw = Array.isArray(req.params.deviceId) ? req.params.deviceId[0] : req.params.deviceId;
+  const deviceId = parseInt(raw, 10);
+  const [device] = await db.select().from(devicesTable).where(eq(devicesTable.id, deviceId));
+  if (!device || !device.apiKey || device.apiKey !== apiKey) {
+    res.status(401).json({ error: "Invalid device credentials" });
+    return;
+  }
+  (req as any).device = device;
   next();
 }
 
