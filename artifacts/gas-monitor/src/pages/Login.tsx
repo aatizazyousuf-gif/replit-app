@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLogin, useRegister, getGetMeQueryKey } from "@workspace/api-client-react";
+import { Preferences } from "@capacitor/preferences";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
@@ -48,7 +49,8 @@ export default function Login() {
     loginMutation.mutate(
       { data: values },
       {
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
+          await Preferences.set({ key: 'authToken', value: data.token });
           queryClient.setQueryData(getGetMeQueryKey(), data.user);
           if (data.user.role === "homeowner") {
             setLocation("/dashboard");
@@ -67,7 +69,8 @@ export default function Login() {
     registerMutation.mutate(
       { data: { ...values, role: activeTab as "homeowner" | "supplier" } },
       {
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
+          await Preferences.set({ key: 'authToken', value: data.token });
           queryClient.setQueryData(getGetMeQueryKey(), data.user);
           if (data.user.role === "homeowner") {
             setLocation("/setup");
