@@ -2,7 +2,7 @@ import { Router } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, devicesTable } from "@workspace/db";
 import { CreateDeviceBody, UpdateDeviceBody } from "@workspace/api-zod";
-import { requireAuth } from "../lib/auth";
+import { requireAuth, generateDeviceApiKey } from "../lib/auth";
 
 const router = Router();
 
@@ -24,6 +24,7 @@ router.post("/devices", requireAuth, async (req, res): Promise<void> => {
     deviceSerial: parsed.data.deviceSerial,
     name: parsed.data.name,
     wifiNetwork: parsed.data.wifiNetwork ?? null,
+    apiKey: generateDeviceApiKey(),
     status: "calibrating",
   }).returning();
   res.status(201).json(device);
