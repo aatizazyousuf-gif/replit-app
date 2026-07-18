@@ -9,6 +9,7 @@ export const devicesTable = pgTable("devices", {
   name: text("name").notNull(),
   status: text("status", { enum: ["online", "offline", "calibrating"] }).notNull().default("offline"),
   wifiNetwork: text("wifi_network"),
+  apiKey: text("api_key"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
