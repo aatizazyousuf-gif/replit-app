@@ -2,7 +2,7 @@ import { Router } from "express";
 import { eq, desc } from "drizzle-orm";
 import { db, sensorReadingsTable, devicesTable, alertsTable } from "@workspace/db";
 import { CreateReadingBody } from "@workspace/api-zod";
-import { requireAuth } from "../lib/auth";
+import { requireAuth, requireDeviceAuth } from "../lib/auth";
 
 const router = Router();
 
@@ -16,7 +16,9 @@ router.get("/devices/:deviceId/readings", requireAuth, async (req, res): Promise
   res.json(readings);
 });
 
-router.post("/devices/:deviceId/readings", requireAuth, async (req, res): Promise<void> => {
+// This endpoint is called by the ESP32 firmware itself, authenticated with its
+// own API key (X-Device-Key header) rather than a user's browser session.
+router.post("/devices/:deviceId/readings", requireDeviceAuth, async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.deviceId) ? req.params.deviceId[0] : req.params.deviceId;
   const deviceId = parseInt(raw, 10);
   const parsed = CreateReadingBody.safeParse(req.body);
