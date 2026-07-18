@@ -644,6 +644,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/HomeownerSummary"
 
+  /homeowner/supplier:
+    get:
+      operationId: getMySupplier
+      tags: [homeowner]
+      summary: Get the supplier linked to the current homeowner (if any)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/LinkedSupplier"
+                  - type: "null"
+
   /homeowner/analytics/usage:
     get:
       operationId: getUsageAnalytics
@@ -705,9 +720,10 @@ components:
 
     AuthResponse:
       type: object
-      required: [user]
+      required: [user, token]
       properties:
-        user: { $ref: "#/components/schemas/User" }
+        user:  { $ref: "#/components/schemas/User" }
+        token: { type: string }
 
     # ── Devices ───────────────────────────────────────────────────────
     Device:
@@ -849,6 +865,14 @@ components:
         gasLevelPercent: { type: ["number", "null"] }
         deviceCount:    { type: integer }
         linkedAt:       { type: string, format: date-time }
+
+    LinkedSupplier:
+      type: object
+      required: [id, name, email]
+      properties:
+        id:    { type: integer }
+        name:  { type: string }
+        email: { type: string }
 
     CustomerLinkInput:
       type: object

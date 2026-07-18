@@ -48,6 +48,7 @@ export interface User {
 
 export interface AuthResponse {
   user: User;
+  token: string;
 }
 
 export type DeviceStatus = typeof DeviceStatus[keyof typeof DeviceStatus];
@@ -243,6 +244,12 @@ export interface SupplierCustomer {
   gasLevelPercent?: number | null;
   deviceCount?: number;
   linkedAt: string;
+}
+
+export interface LinkedSupplier {
+  id: number;
+  name: string;
+  email: string;
 }
 
 export interface CustomerLinkInput {

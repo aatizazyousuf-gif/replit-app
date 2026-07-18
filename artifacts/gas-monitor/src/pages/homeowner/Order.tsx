@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { AppLayout } from "@/layouts/Layout";
-import { useCreateRefillOrder } from "@workspace/api-client-react";
+import { useCreateRefillOrder, useGetMySupplier } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ export default function HomeownerOrder() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const createOrder = useCreateRefillOrder();
+  const { data: supplier } = useGetMySupplier();
 
   const [deliveryType, setDeliveryType] = useState<"standard" | "express" | "emergency">("standard");
   const [volume, setVolume] = useState("100");
@@ -37,9 +38,13 @@ export default function HomeownerOrder() {
       toast({ title: "Invalid Volume", description: "Please enter a valid amount.", variant: "destructive" });
       return;
     }
+    if (!supplier) {
+      toast({ title: "No Supplier Linked", description: "You need to be linked to a supplier before ordering. Ask your supplier to add you as a customer.", variant: "destructive" });
+      return;
+    }
     
     createOrder.mutate(
-      { data: { deliveryType, volumeGallons: volumeNum, notes } },
+      { data: { deliveryType, volumeGallons: volumeNum, notes, supplierId: supplier.id } },
       {
         onSuccess: () => {
           toast({ title: "Order Placed", description: "Your refill order has been received." });
@@ -56,6 +61,17 @@ export default function HomeownerOrder() {
     <AppLayout title="Order Refill">
       <form onSubmit={handleSubmit} className="space-y-6">
         
+        {!supplier && (
+          <Card className="bg-[var(--color-error-container)]/30 border border-[var(--color-error)] p-4">
+            <div className="flex items-center gap-3">
+              <span className="material-icons text-[var(--color-error)]">warning</span>
+              <p className="text-sm text-[var(--color-on-surface)]">
+                You're not linked to a supplier yet. Ask your gas supplier to add you as a customer (using this account's email) before placing an order.
+              </p>
+            </div>
+          </Card>
+        )}
+
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-[var(--color-on-surface)]">Delivery Urgency</Label>
           <RadioGroup value={deliveryType} onValueChange={(v) => setDeliveryType(v as any)} className="grid gap-3">
@@ -152,7 +168,7 @@ export default function HomeownerOrder() {
 
         <Button 
           type="submit" 
-          disabled={createOrder.isPending || volumeNum <= 0} 
+          disabled={createOrder.isPending || volumeNum <= 0 || !supplier} 
           className="w-full h-14 text-lg bg-[var(--color-primary)] hover:bg-[var(--color-primary-container)] text-[var(--color-on-primary)] shadow-md"
         >
           {createOrder.isPending ? "Processing..." : `Place Order — $${total.toFixed(2)}`}

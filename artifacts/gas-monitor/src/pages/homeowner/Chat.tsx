@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { AppLayout } from "@/layouts/Layout";
-import { useGetConversations, useGetMessages, useSendMessage, getGetMessagesQueryKey } from "@workspace/api-client-react";
+import { useGetMySupplier, useGetMessages, useSendMessage, getGetMessagesQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,10 +15,11 @@ export default function HomeownerChat() {
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  // For homeowner, we just need to get the first conversation (usually with their supplier)
-  const { data: conversations, isLoading: isConversationsLoading } = useGetConversations();
-  const supplierId = conversations?.[0]?.userId;
+
+  // The homeowner's supplier is whoever linked them as a customer -
+  // NOT derived from existing messages (a first-time user has none yet).
+  const { data: supplier, isLoading: isSupplierLoading } = useGetMySupplier();
+  const supplierId = supplier?.id;
 
   const { data: messages, isLoading: isMessagesLoading } = useGetMessages(
     { withUserId: supplierId! },
@@ -56,7 +57,7 @@ export default function HomeownerChat() {
     <AppLayout title="Support Chat">
       <div className="flex flex-col h-[calc(100vh-14rem)] relative">
         <div className="flex-1 overflow-y-auto pb-4 space-y-4 px-1">
-          {isConversationsLoading || isMessagesLoading ? (
+          {isSupplierLoading || isMessagesLoading ? (
             <div className="space-y-4">
               <Skeleton className="h-16 w-3/4 rounded-2xl rounded-tl-sm bg-[var(--color-surface-container-high)]" />
               <Skeleton className="h-12 w-2/3 ml-auto rounded-2xl rounded-tr-sm bg-[var(--color-primary-fixed)]" />

@@ -37,7 +37,8 @@ export const RegisterResponse = zod.object({
   "email": zod.string(),
   "role": zod.enum(['homeowner', 'supplier']),
   "createdAt": zod.coerce.date()
-})
+}),
+  "token": zod.string()
 })
 
 
@@ -56,7 +57,8 @@ export const LoginResponse = zod.object({
   "email": zod.string(),
   "role": zod.enum(['homeowner', 'supplier']),
   "createdAt": zod.coerce.date()
-})
+}),
+  "token": zod.string()
 })
 
 
@@ -656,6 +658,16 @@ export const GetHomeownerSummaryResponse = zod.object({
 }).nullable(),
   "estimatedDaysLeft": zod.number().nullish()
 })
+
+
+/**
+ * @summary Get the supplier linked to the current homeowner (if any)
+ */
+export const GetMySupplierResponse = zod.union([zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string()
+}),zod.null()])
 
 
 /**

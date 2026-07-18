@@ -1,9 +1,22 @@
 import { Router } from "express";
 import { eq, and, isNull, desc } from "drizzle-orm";
-import { db, devicesTable, sensorReadingsTable, alertsTable, refillOrdersTable } from "@workspace/db";
+import { db, devicesTable, sensorReadingsTable, alertsTable, refillOrdersTable, supplierCustomersTable, usersTable } from "@workspace/db";
 import { requireAuth } from "../lib/auth";
 
 const router = Router();
+
+router.get("/homeowner/supplier", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as any).user;
+  if (user.role !== "homeowner") { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const [link] = await db.select().from(supplierCustomersTable).where(eq(supplierCustomersTable.homeownerId, user.id));
+  if (!link) { res.json(null); return; }
+
+  const [supplier] = await db.select().from(usersTable).where(eq(usersTable.id, link.supplierId));
+  if (!supplier) { res.json(null); return; }
+
+  res.json({ id: supplier.id, name: supplier.name, email: supplier.email });
+});
 
 router.get("/homeowner/summary", requireAuth, async (req, res): Promise<void> => {
   const user = (req as any).user;

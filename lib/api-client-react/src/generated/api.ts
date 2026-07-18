@@ -39,6 +39,7 @@ import type {
   InventoryItem,
   InventoryItemInput,
   InventoryItemUpdate,
+  LinkedSupplier,
   Message,
   MessageInput,
   RefillOrder,
@@ -2612,6 +2613,83 @@ export function useGetHomeownerSummary<TData = Awaited<ReturnType<typeof getHome
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetHomeownerSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMySupplierUrl = () => {
+
+
+
+
+  return `/api/homeowner/supplier`
+}
+
+/**
+ * @summary Get the supplier linked to the current homeowner (if any)
+ */
+export const getMySupplier = async ( options?: RequestInit): Promise<LinkedSupplier | null> => {
+
+  return customFetch<LinkedSupplier | null>(getGetMySupplierUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMySupplierQueryKey = () => {
+    return [
+    `/api/homeowner/supplier`
+    ] as const;
+    }
+
+
+export const getGetMySupplierQueryOptions = <TData = Awaited<ReturnType<typeof getMySupplier>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMySupplier>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMySupplierQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMySupplier>>> = ({ signal }) => getMySupplier({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMySupplier>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMySupplierQueryResult = NonNullable<Awaited<ReturnType<typeof getMySupplier>>>
+export type GetMySupplierQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the supplier linked to the current homeowner (if any)
+ */
+
+export function useGetMySupplier<TData = Awaited<ReturnType<typeof getMySupplier>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMySupplier>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMySupplierQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

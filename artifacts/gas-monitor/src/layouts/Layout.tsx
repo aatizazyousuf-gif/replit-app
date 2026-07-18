@@ -20,6 +20,7 @@ const supplierItems = [
   { label: "Customers", icon: "people", href: "/supplier/customers" },
   { label: "Dispatch", icon: "rv_hookup", href: "/supplier/dispatch" },
   { label: "Inventory", icon: "inventory_2", href: "/supplier/inventory" },
+  { label: "Chat", icon: "chat", href: "/supplier/chat" },
   { label: "Analytics", icon: "bar_chart", href: "/supplier/analytics" },
 ];
 

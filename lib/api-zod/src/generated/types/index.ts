@@ -33,6 +33,7 @@ export * from './homeownerSummary';
 export * from './inventoryItem';
 export * from './inventoryItemInput';
 export * from './inventoryItemUpdate';
+export * from './linkedSupplier';
 export * from './message';
 export * from './messageInput';
 export * from './refillOrder';
