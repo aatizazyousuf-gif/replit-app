@@ -2,6 +2,7 @@ import React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { BottomNav } from "@/components/BottomNav";
 import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
+import { Preferences } from "@capacitor/preferences";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,8 @@ export function AppLayout({ children, title }: { children: React.ReactNode, titl
 
   const handleLogout = () => {
     logoutMutation.mutate(undefined, {
-      onSuccess: () => {
+      onSuccess: async () => {
+        await Preferences.remove({ key: 'authToken' });
         queryClient.setQueryData(getGetMeQueryKey(), null);
         setLocation("/login");
       }
