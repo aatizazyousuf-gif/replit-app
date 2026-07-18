@@ -14,7 +14,8 @@ export default function SetupWizard() {
   const [password, setPassword] = useState("");
   const [calibrating, setCalibrating] = useState(false);
   const [calibrationProgress, setCalibrationProgress] = useState(0);
-  
+  const [provisioned, setProvisioned] = useState<{ id: number; apiKey: string } | null>(null);
+
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const createDeviceMutation = useCreateDevice();
@@ -38,9 +39,9 @@ export default function SetupWizard() {
     createDeviceMutation.mutate(
       { data: { deviceSerial: serial, name: "Main Tank", wifiNetwork: ssid } },
       {
-        onSuccess: () => {
-          toast({ title: "Setup Complete", description: "Your Gas Monitor is online." });
-          setLocation("/dashboard");
+        onSuccess: (device: any) => {
+          setProvisioned({ id: device.id, apiKey: device.apiKey });
+          setStep(5);
         },
         onError: () => {
           toast({ title: "Error", description: "Failed to register device.", variant: "destructive" });
@@ -55,7 +56,7 @@ export default function SetupWizard() {
         
         {/* Progress indicator */}
         <div className="flex gap-2 mb-8">
-          {[1, 2, 3, 4].map(i => (
+          {[1, 2, 3, 4, 5].map(i => (
             <div key={i} className={cn("h-1.5 flex-1 rounded-full", step >= i ? "bg-[var(--color-primary)]" : "bg-[var(--color-surface-dim)]")} />
           ))}
         </div>
@@ -143,6 +144,28 @@ export default function SetupWizard() {
               <p className="text-[var(--color-on-surface-variant)]">Your gas monitor is successfully linked and actively monitoring.</p>
             </div>
           )}
+
+          {step === 5 && provisioned && (
+            <div className="w-full flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 text-left">
+              <div className="w-24 h-24 rounded-full bg-[var(--color-secondary-container)] flex items-center justify-center mb-6">
+                <span className="material-icons text-4xl text-[var(--color-on-secondary-container)]">key</span>
+              </div>
+              <h2 className="text-2xl font-bold text-[var(--color-on-surface)] mb-2 text-center">Device Credentials</h2>
+              <p className="text-[var(--color-on-surface-variant)] mb-6 text-center text-sm">
+                Copy these into your ESP32 firmware before flashing it — you won't be able to see the API key again after leaving this screen.
+              </p>
+              <div className="w-full space-y-3">
+                <div className="bg-[var(--color-surface-container-lowest)] border border-[var(--color-outline-variant)] rounded-lg p-3">
+                  <div className="text-xs font-mono text-[var(--color-on-surface-variant)] mb-1">DEVICE_ID</div>
+                  <div className="font-mono text-sm break-all select-all">{provisioned.id}</div>
+                </div>
+                <div className="bg-[var(--color-surface-container-lowest)] border border-[var(--color-outline-variant)] rounded-lg p-3">
+                  <div className="text-xs font-mono text-[var(--color-on-surface-variant)] mb-1">DEVICE_API_KEY</div>
+                  <div className="font-mono text-sm break-all select-all">{provisioned.apiKey}</div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="pt-8">
@@ -161,7 +184,19 @@ export default function SetupWizard() {
           )}
           {step === 4 && (
             <Button onClick={handleComplete} disabled={createDeviceMutation.isPending} className="w-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-container)] text-[var(--color-on-primary)]" size="lg">
-              {createDeviceMutation.isPending ? "Finalizing..." : "Go to Dashboard"}
+              {createDeviceMutation.isPending ? "Finalizing..." : "Finish Setup"}
+            </Button>
+          )}
+          {step === 5 && (
+            <Button
+              onClick={() => {
+                toast({ title: "Setup Complete", description: "Your Gas Monitor is online." });
+                setLocation("/dashboard");
+              }}
+              className="w-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-container)] text-[var(--color-on-primary)]"
+              size="lg"
+            >
+              I've saved these — Go to Dashboard
             </Button>
           )}
         </div>
