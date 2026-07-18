@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { AppLayout } from "@/layouts/Layout";
-import { useGetConversations, getGetConversationsQueryKey, useGetMessages, useSendMessage, getGetMessagesQueryKey } from "@workspace/api-client-react";
+import { useGetConversations, getGetConversationsQueryKey, useGetMessages, useSendMessage, getGetMessagesQueryKey, useGetSupplierCustomers } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,11 +13,28 @@ export default function SupplierChat() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  const [selectedCustomerName, setSelectedCustomerName] = useState<string>("");
   const [content, setContent] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: conversations, isLoading: isConversationsLoading } = useGetConversations({
     query: { refetchInterval: 5000, queryKey: getGetConversationsQueryKey() }
+  });
+
+  // Linked customers may not have an existing conversation yet - they still
+  // need to show up here so the supplier can start chatting with them.
+  const { data: customers, isLoading: isCustomersLoading } = useGetSupplierCustomers();
+
+  // Merge: every linked customer gets an entry, using their real last
+  // message/time if a conversation already exists.
+  const chatTargets = (customers ?? []).map((cust) => {
+    const existing = conversations?.find((c) => c.userId === cust.homeownerId);
+    return {
+      userId: cust.homeownerId,
+      userName: cust.homeownerName,
+      lastMessage: existing?.lastMessage ?? "No messages yet - tap to start",
+      lastMessageAt: existing?.lastMessageAt ?? cust.linkedAt,
+    };
   });
 
   const { data: messages, isLoading: isMessagesLoading } = useGetMessages(
@@ -57,18 +74,18 @@ export default function SupplierChat() {
         {!selectedCustomerId ? (
           // Conversations List
           <div className="flex-1 overflow-y-auto space-y-2">
-            {isConversationsLoading ? (
+            {isConversationsLoading || isCustomersLoading ? (
               [1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
-            ) : conversations?.length === 0 ? (
+            ) : chatTargets.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center p-6 text-[var(--color-on-surface-variant)]">
                 <span className="material-icons text-4xl mb-2 opacity-50">forum</span>
-                <p>No messages yet.</p>
+                <p>No customers linked yet. Link a customer from the Customers tab to start chatting.</p>
               </div>
             ) : (
-              conversations?.map((conv) => (
+              chatTargets.map((conv) => (
                 <button
                   key={conv.userId}
-                  onClick={() => setSelectedCustomerId(conv.userId)}
+                  onClick={() => { setSelectedCustomerId(conv.userId); setSelectedCustomerName(conv.userName); }}
                   className="w-full bg-[var(--color-surface-container-lowest)] p-4 border border-[var(--color-outline-variant)] rounded-xl text-left flex items-start gap-3 hover:bg-[var(--color-surface-container-low)] transition-colors"
                 >
                   <div className="w-10 h-10 rounded-full bg-[var(--color-primary-container)] flex items-center justify-center text-[var(--color-on-primary-container)] shrink-0">
@@ -93,11 +110,11 @@ export default function SupplierChat() {
           // Active Chat View
           <>
             <div className="bg-[var(--color-surface-container-high)] p-2 mb-2 rounded-xl flex items-center gap-2 sticky top-0 z-10 border border-[var(--color-outline-variant)]">
-              <Button variant="ghost" size="icon" onClick={() => setSelectedCustomerId(null)} className="h-8 w-8 text-[var(--color-on-surface-variant)]">
+              <Button variant="ghost" size="icon" onClick={() => { setSelectedCustomerId(null); setSelectedCustomerName(""); }} className="h-8 w-8 text-[var(--color-on-surface-variant)]">
                 <span className="material-icons text-sm">arrow_back</span>
               </Button>
               <span className="font-bold text-[var(--color-on-surface)] truncate">
-                {conversations?.find(c => c.userId === selectedCustomerId)?.userName}
+                {selectedCustomerName}
               </span>
             </div>
 

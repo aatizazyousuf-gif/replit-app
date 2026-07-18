@@ -4,10 +4,18 @@ import { useGetInventory, useCreateInventoryItem, useUpdateInventoryItem, getGet
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function SupplierInventory() {
   const { data: inventory, isLoading } = useGetInventory();
@@ -19,6 +27,39 @@ export default function SupplierInventory() {
   const [editId, setEditId] = useState<number | null>(null);
   const [editQty, setEditQty] = useState("");
   const [editPrice, setEditPrice] = useState("");
+
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newCylinderType, setNewCylinderType] = useState("");
+  const [newQty, setNewQty] = useState("");
+  const [newPrice, setNewPrice] = useState("");
+
+  const handleAdd = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCylinderType.trim()) return;
+
+    createMutation.mutate(
+      {
+        data: {
+          cylinderType: newCylinderType,
+          quantityAvailable: parseInt(newQty) || 0,
+          pricePerUnit: newPrice ? parseFloat(newPrice) : undefined,
+        }
+      },
+      {
+        onSuccess: () => {
+          toast({ title: "Item Added", description: "New inventory item created." });
+          queryClient.invalidateQueries({ queryKey: getGetInventoryQueryKey() });
+          setNewCylinderType("");
+          setNewQty("");
+          setNewPrice("");
+          setIsAddDialogOpen(false);
+        },
+        onError: () => {
+          toast({ title: "Failed to Add", description: "Could not create inventory item.", variant: "destructive" });
+        }
+      }
+    );
+  };
 
   const handleEdit = (item: any) => {
     setEditId(item.id);
@@ -41,9 +82,51 @@ export default function SupplierInventory() {
   return (
     <AppLayout title="Inventory">
       <div className="space-y-6">
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="w-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-container)] text-[var(--color-on-primary)]">
+              <span className="material-icons text-sm mr-2">add</span>
+              Add Inventory Item
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Inventory Item</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleAdd} className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <Label>Cylinder Type</Label>
+                <Input
+                  value={newCylinderType}
+                  onChange={(e) => setNewCylinderType(e.target.value)}
+                  placeholder="e.g. 20lb Propane Tank"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Quantity Available</Label>
+                  <Input type="number" value={newQty} onChange={(e) => setNewQty(e.target.value)} placeholder="0" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Price/Unit</Label>
+                  <Input type="number" step="0.01" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} placeholder="0.00" />
+                </div>
+              </div>
+              <Button type="submit" disabled={createMutation.isPending || !newCylinderType.trim()} className="w-full bg-[var(--color-primary)] text-[var(--color-on-primary)]">
+                {createMutation.isPending ? "Adding..." : "Add Item"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+
         <div className="grid grid-cols-1 gap-4">
           {isLoading ? (
             [1, 2, 3].map(i => <Skeleton key={i} className="h-32 w-full rounded-xl" />)
+          ) : inventory?.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center p-10 text-[var(--color-on-surface-variant)]">
+              <span className="material-icons text-4xl mb-2 opacity-50">inventory_2</span>
+              <p>No inventory items yet. Add your first one above.</p>
+            </div>
           ) : (
             inventory?.map(item => (
               <Card key={item.id} className="bg-[var(--color-surface-container-lowest)] p-5 border border-[var(--color-outline-variant)] shadow-sm rounded-xl">
