@@ -1,5 +1,7 @@
 import { createRoot } from 'react-dom/client';
-import { setBaseUrl } from '@workspace/api-client-react';
+//import { setBaseUrl } from '@workspace/api-client-react';
+import { setBaseUrl, setAuthTokenGetter } from '@workspace/api-client-react';
+import { Preferences } from '@capacitor/preferences';
 
 import App from './App';
 
@@ -14,5 +16,8 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
 if (apiBaseUrl) {
   setBaseUrl(apiBaseUrl);
 }
-
+setAuthTokenGetter(async () => {
+  const { value } = await Preferences.get({ key: 'authToken' });
+  return value ?? null;
+});
 createRoot(document.getElementById('root')!).render(<App />);
