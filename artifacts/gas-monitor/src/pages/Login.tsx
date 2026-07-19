@@ -10,7 +10,7 @@ import { z } from "zod";
 import { useLogin, useRegister, getGetMeQueryKey } from "@workspace/api-client-react";
 import { Preferences } from "@capacitor/preferences";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 
@@ -198,6 +198,13 @@ export default function Login() {
           >
             {isLogin ? "Don't have an account? Sign up" : "Already have an account? Log in"}
           </button>
+        </div>
+
+        <div className="mt-3 text-center">
+          <Link href="/settings" className="text-xs text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)] inline-flex items-center gap-1">
+            <span className="material-icons text-sm">settings</span>
+            Backend Settings
+          </Link>
         </div>
       </div>
     </AuthLayout>

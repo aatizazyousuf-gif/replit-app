@@ -6,16 +6,6 @@ import App from './App';
 
 import './index.css';
 
-// When running inside the packaged Android app (Capacitor), relative "/api/..."
-// requests have no server to resolve against. Point them at a deployed backend
-// via the VITE_API_BASE_URL build-time variable (set as a GitHub Actions
-// variable/secret). When unset (e.g. normal web deploy), requests stay
-// relative and behave exactly as before.
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
-if (apiBaseUrl) {
-  setBaseUrl(apiBaseUrl);
-}
-
 // The packaged app talks to a remote server, so requests are cross-origin —
 // browsers/WebViews won't reliably send the session cookie on those requests.
 // Use a Bearer token instead: it's saved to device storage on login/register
@@ -25,4 +15,25 @@ setAuthTokenGetter(async () => {
   return value ?? null;
 });
 
-createRoot(document.getElementById('root')!).render(<App />);
+// Backend URL resolution order:
+// 1. A URL the user saved themselves on the in-app Settings screen (this is
+//    what lets you update the backend address - e.g. after restarting your
+//    Cloudflare Tunnel - without ever rebuilding the app).
+// 2. The VITE_API_BASE_URL baked in at build time (GitHub Actions variable),
+//    used the very first time the app runs before any override is saved.
+async function initApiBaseUrl() {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  const { value: savedUrl } = await Preferences.get({ key: 'apiBaseUrl' });
+
+  if (savedUrl) {
+    setBaseUrl(savedUrl);
+  } else if (apiBaseUrl) {
+    setBaseUrl(apiBaseUrl);
+    // Seed storage so the Settings screen has something to show/edit.
+    await Preferences.set({ key: 'apiBaseUrl', value: apiBaseUrl });
+  }
+}
+
+initApiBaseUrl().finally(() => {
+  createRoot(document.getElementById('root')!).render(<App />);
+});

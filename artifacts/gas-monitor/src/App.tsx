@@ -13,6 +13,7 @@ import HomeownerRefills from '@/pages/homeowner/Refills';
 import HomeownerOrder from '@/pages/homeowner/Order';
 import HomeownerChat from '@/pages/homeowner/Chat';
 import SetupWizard from '@/pages/homeowner/SetupWizard';
+import Settings from '@/pages/Settings';
 
 import SupplierDashboard from '@/pages/supplier/Dashboard';
 import SupplierCustomers from '@/pages/supplier/Customers';
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/" component={() => null} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Login} />
+      <Route path="/settings" component={Settings} />
       
       {/* Homeowner Routes */}
       <Route path="/setup" component={SetupWizard} />

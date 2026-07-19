@@ -51,6 +51,9 @@ export function AppLayout({ children, title }: { children: React.ReactNode, titl
           {title || "Gas Monitor"}
         </h1>
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/settings")} className="text-[var(--color-on-surface-variant)]" title="Settings">
+            <span className="material-icons">settings</span>
+          </Button>
           <Button variant="ghost" size="icon" onClick={handleLogout} className="text-[var(--color-on-surface-variant)] hover:text-[var(--color-error)]" title="Logout">
             <span className="material-icons">logout</span>
           </Button>

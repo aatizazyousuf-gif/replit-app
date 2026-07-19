@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isLoading) return;
     
     // Non-authed user trying to access protected routes
-    if (!currentUser && location !== "/login" && location !== "/register") {
+    if (!currentUser && location !== "/login" && location !== "/register" && location !== "/settings") {
       setLocation("/login");
       return;
     }
@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else if (currentUser.role === "supplier") {
           setLocation("/supplier/dashboard");
         }
-      } else {
+      } else if (location !== "/settings") {
         // Enforce role boundaries
         if (currentUser.role === "homeowner" && location.startsWith("/supplier")) {
           setLocation("/dashboard");
