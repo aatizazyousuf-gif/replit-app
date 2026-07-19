@@ -15,25 +15,32 @@ setAuthTokenGetter(async () => {
   return value ?? null;
 });
 
-// Backend URL resolution order:
-// 1. A URL the user saved themselves on the in-app Settings screen (this is
-//    what lets you update the backend address - e.g. after restarting your
-//    Cloudflare Tunnel - without ever rebuilding the app).
-// 2. The VITE_API_BASE_URL baked in at build time (GitHub Actions variable),
-//    used the very first time the app runs before any override is saved.
-async function initApiBaseUrl() {
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
-  const { value: savedUrl } = await Preferences.get({ key: 'apiBaseUrl' });
-
-  if (savedUrl) {
-    setBaseUrl(savedUrl);
-  } else if (apiBaseUrl) {
-    setBaseUrl(apiBaseUrl);
-    // Seed storage so the Settings screen has something to show/edit.
-    await Preferences.set({ key: 'apiBaseUrl', value: apiBaseUrl });
-  }
+// Backend URL resolution:
+// 1. Apply the VITE_API_BASE_URL build-time default immediately and
+//    synchronously - this must never be blocked by a native plugin call,
+//    since Capacitor plugins aren't guaranteed ready this early in boot.
+// 2. Then, once Preferences is available, check for a URL the user saved
+//    themselves on the in-app Settings screen and use that instead if
+//    present. This lets you update the backend address (e.g. after
+//    restarting your Cloudflare Tunnel) without ever rebuilding the app -
+//    but it's applied as a non-blocking overlay, not a boot dependency.
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+if (apiBaseUrl) {
+  setBaseUrl(apiBaseUrl);
 }
 
-initApiBaseUrl().finally(() => {
-  createRoot(document.getElementById('root')!).render(<App />);
-});
+createRoot(document.getElementById('root')!).render(<App />);
+
+Preferences.get({ key: 'apiBaseUrl' })
+  .then(({ value: savedUrl }) => {
+    if (savedUrl) {
+      setBaseUrl(savedUrl);
+    } else if (apiBaseUrl) {
+      // Seed storage so the Settings screen has something to show/edit.
+      Preferences.set({ key: 'apiBaseUrl', value: apiBaseUrl });
+    }
+  })
+  .catch(() => {
+    // If Preferences isn't available for some reason, we've already
+    // applied the build-time default above, so the app still works.
+  });
