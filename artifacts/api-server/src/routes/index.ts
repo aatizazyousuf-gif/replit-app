@@ -8,6 +8,8 @@ import refillOrdersRouter from "./refill_orders";
 import messagesRouter from "./messages";
 import supplierRouter from "./supplier";
 import homeownerRouter from "./homeowner";
+import usersRouter from "./users";
+import emergencyContactsRouter from "./emergency_contacts";
 
 const router: IRouter = Router();
 
@@ -20,5 +22,7 @@ router.use(refillOrdersRouter);
 router.use(messagesRouter);
 router.use(supplierRouter);
 router.use(homeownerRouter);
+router.use(usersRouter);
+router.use(emergencyContactsRouter);
 
 export default router;

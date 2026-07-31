@@ -1,8 +1,10 @@
 import { Router } from "express";
 import { eq, desc } from "drizzle-orm";
-import { db, sensorReadingsTable, devicesTable, alertsTable } from "@workspace/db";
+import { db, sensorReadingsTable, devicesTable, alertsTable, supplierCustomersTable } from "@workspace/db";
 import { CreateReadingBody } from "@workspace/api-zod";
 import { requireAuth, requireDeviceAuth } from "../lib/auth";
+import { sendPushToUser } from "../lib/push";
+import { sendLeakEmailAlert } from "../lib/email";
 
 const router = Router();
 
@@ -34,23 +36,53 @@ router.post("/devices/:deviceId/readings", requireDeviceAuth, async (req, res): 
   // Auto-create alert if gas detected or level critical
   const [device] = await db.select().from(devicesTable).where(eq(devicesTable.id, deviceId));
   if (device) {
+    let alertType: "gas_leak" | "low_level" | null = null;
+    let alertMessage = "";
     if (parsed.data.gasDetected) {
-      await db.insert(alertsTable).values({
-        deviceId,
-        userId: device.userId,
-        type: "gas_leak",
-        message: "Gas detected by MQ-2 sensor. Check immediately.",
-        severity: "critical",
-      });
+      alertType = "gas_leak";
+      alertMessage = "Gas detected by MQ-2 sensor. Check immediately.";
     } else if (parsed.data.gasLevelPercent < 20) {
+      alertType = "low_level";
+      alertMessage = `Gas level critically low at ${parsed.data.gasLevelPercent.toFixed(1)}%.`;
+    }
+
+    if (alertType) {
       await db.insert(alertsTable).values({
         deviceId,
         userId: device.userId,
-        type: "low_level",
-        message: `Gas level critically low at ${parsed.data.gasLevelPercent.toFixed(1)}%.`,
+        type: alertType,
+        message: alertMessage,
         severity: "critical",
       });
+
+      const pushTitle = alertType === "gas_leak" ? "\u26a0\ufe0f Gas Leak Detected" : "\u26a0\ufe0f Gas Level Critically Low";
+
+      // Notify the homeowner who owns the device: push + email (to the
+      // account holder and every emergency contact they've added).
+      await sendPushToUser(device.userId, pushTitle, alertMessage, {
+        type: alertType,
+        deviceId: String(deviceId),
+      });
+      await sendLeakEmailAlert(device.userId, pushTitle, alertMessage);
+
+      // A leak or critical shortage also matters to the linked supplier -
+      // they may need to prioritize a delivery, so alert them too.
+      const [link] = await db.select().from(supplierCustomersTable).where(eq(supplierCustomersTable.homeownerId, device.userId));
+      if (link) {
+        await db.insert(alertsTable).values({
+          deviceId,
+          userId: link.supplierId,
+          type: alertType,
+          message: `Customer alert - ${alertMessage}`,
+          severity: "critical",
+        });
+        await sendPushToUser(link.supplierId, pushTitle + " (Customer)", `One of your linked customers: ${alertMessage}`, {
+          type: alertType,
+          deviceId: String(deviceId),
+        });
+      }
     }
+
     // Update device status to online
     await db.update(devicesTable).set({ status: "online" }).where(eq(devicesTable.id, deviceId));
   }

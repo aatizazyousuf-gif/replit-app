@@ -659,6 +659,67 @@ paths:
                   - $ref: "#/components/schemas/LinkedSupplier"
                   - type: "null"
 
+  /users/push-token:
+    post:
+      operationId: registerPushToken
+      tags: [users]
+      summary: Register (or update) this device's push notification token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterPushTokenInput"
+      responses:
+        "204":
+          description: Saved
+
+  /homeowner/emergency-contacts:
+    get:
+      operationId: getEmergencyContacts
+      tags: [homeowner]
+      summary: List the current homeowner's emergency contacts
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EmergencyContact"
+    post:
+      operationId: createEmergencyContact
+      tags: [homeowner]
+      summary: Add an emergency contact (notified by email on leak/low-level alerts)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEmergencyContactInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmergencyContact"
+
+  /homeowner/emergency-contacts/{id}:
+    delete:
+      operationId: deleteEmergencyContact
+      tags: [homeowner]
+      summary: Remove an emergency contact
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
   /homeowner/analytics/usage:
     get:
       operationId: getUsageAnalytics
@@ -871,6 +932,29 @@ components:
       required: [id, name, email]
       properties:
         id:    { type: integer }
+        name:  { type: string }
+        email: { type: string }
+
+    RegisterPushTokenInput:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string }
+
+    EmergencyContact:
+      type: object
+      required: [id, homeownerId, name, email, createdAt]
+      properties:
+        id:          { type: integer }
+        homeownerId: { type: integer }
+        name:        { type: string }
+        email:       { type: string }
+        createdAt:   { type: string, format: date-time }
+
+    CreateEmergencyContactInput:
+      type: object
+      required: [name, email]
+      properties:
         name:  { type: string }
         email: { type: string }
 

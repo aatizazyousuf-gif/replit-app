@@ -671,6 +671,56 @@ export const GetMySupplierResponse = zod.union([zod.object({
 
 
 /**
+ * @summary Register (or update) this device's push notification token
+ */
+export const RegisterPushTokenBody = zod.object({
+  "token": zod.string()
+})
+
+export const RegisterPushTokenResponse = zod.void()
+
+
+/**
+ * @summary List the current homeowner's emergency contacts
+ */
+export const GetEmergencyContactsResponseItem = zod.object({
+  "id": zod.number(),
+  "homeownerId": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const GetEmergencyContactsResponse = zod.array(GetEmergencyContactsResponseItem)
+
+
+/**
+ * @summary Add an emergency contact (notified by email on leak/low-level alerts)
+ */
+export const CreateEmergencyContactBody = zod.object({
+  "name": zod.string(),
+  "email": zod.string()
+})
+
+export const CreateEmergencyContactResponse = zod.object({
+  "id": zod.number(),
+  "homeownerId": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove an emergency contact
+ */
+export const DeleteEmergencyContactParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteEmergencyContactResponse = zod.void()
+
+
+/**
  * @summary Gas usage analytics
  */
 export const getUsageAnalyticsQueryPeriodDefault = `daily`;

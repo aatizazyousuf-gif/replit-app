@@ -23,6 +23,7 @@ import type {
   Alert,
   AuthResponse,
   Conversation,
+  CreateEmergencyContactInput,
   CustomerLinkInput,
   Device,
   DeviceInput,
@@ -30,6 +31,7 @@ import type {
   Dispatch,
   DispatchInput,
   DispatchUpdate,
+  EmergencyContact,
   GetAlertsParams,
   GetMessagesParams,
   GetRevenueAnalyticsParams,
@@ -45,6 +47,7 @@ import type {
   RefillOrder,
   RefillOrderInput,
   RefillOrderUpdate,
+  RegisterPushTokenInput,
   RevenueDataPoint,
   SensorReading,
   SensorReadingInput,
@@ -2701,6 +2704,296 @@ export function useGetMySupplier<TData = Awaited<ReturnType<typeof getMySupplier
 
 
 
+
+export const getRegisterPushTokenUrl = () => {
+
+
+
+
+  return `/api/users/push-token`
+}
+
+/**
+ * @summary Register (or update) this device's push notification token
+ */
+export const registerPushToken = async (registerPushTokenInput: RegisterPushTokenInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRegisterPushTokenUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(registerPushTokenInput)
+  }
+);}
+
+
+
+
+
+export const getRegisterPushTokenMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerPushToken>>, TError,{data: BodyType<RegisterPushTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof registerPushToken>>, TError,{data: BodyType<RegisterPushTokenInput>}, TContext> => {
+
+const mutationKey = ['registerPushToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerPushToken>>, {data: BodyType<RegisterPushTokenInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  registerPushToken(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterPushTokenMutationResult = NonNullable<Awaited<ReturnType<typeof registerPushToken>>>
+    export type RegisterPushTokenMutationBody = BodyType<RegisterPushTokenInput>
+    export type RegisterPushTokenMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Register (or update) this device's push notification token
+ */
+export const useRegisterPushToken = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerPushToken>>, TError,{data: BodyType<RegisterPushTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof registerPushToken>>,
+        TError,
+        {data: BodyType<RegisterPushTokenInput>},
+        TContext
+      > => {
+      return useMutation(getRegisterPushTokenMutationOptions(options));
+    }
+
+export const getGetEmergencyContactsUrl = () => {
+
+
+
+
+  return `/api/homeowner/emergency-contacts`
+}
+
+/**
+ * @summary List the current homeowner's emergency contacts
+ */
+export const getEmergencyContacts = async ( options?: RequestInit): Promise<EmergencyContact[]> => {
+
+  return customFetch<EmergencyContact[]>(getGetEmergencyContactsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEmergencyContactsQueryKey = () => {
+    return [
+    `/api/homeowner/emergency-contacts`
+    ] as const;
+    }
+
+
+export const getGetEmergencyContactsQueryOptions = <TData = Awaited<ReturnType<typeof getEmergencyContacts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmergencyContacts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEmergencyContactsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEmergencyContacts>>> = ({ signal }) => getEmergencyContacts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEmergencyContacts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEmergencyContactsQueryResult = NonNullable<Awaited<ReturnType<typeof getEmergencyContacts>>>
+export type GetEmergencyContactsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the current homeowner's emergency contacts
+ */
+
+export function useGetEmergencyContacts<TData = Awaited<ReturnType<typeof getEmergencyContacts>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmergencyContacts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEmergencyContactsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateEmergencyContactUrl = () => {
+
+
+
+
+  return `/api/homeowner/emergency-contacts`
+}
+
+/**
+ * @summary Add an emergency contact (notified by email on leak/low-level alerts)
+ */
+export const createEmergencyContact = async (createEmergencyContactInput: CreateEmergencyContactInput, options?: RequestInit): Promise<EmergencyContact> => {
+
+  return customFetch<EmergencyContact>(getCreateEmergencyContactUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createEmergencyContactInput)
+  }
+);}
+
+
+
+
+
+export const getCreateEmergencyContactMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEmergencyContact>>, TError,{data: BodyType<CreateEmergencyContactInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createEmergencyContact>>, TError,{data: BodyType<CreateEmergencyContactInput>}, TContext> => {
+
+const mutationKey = ['createEmergencyContact'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createEmergencyContact>>, {data: BodyType<CreateEmergencyContactInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createEmergencyContact(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateEmergencyContactMutationResult = NonNullable<Awaited<ReturnType<typeof createEmergencyContact>>>
+    export type CreateEmergencyContactMutationBody = BodyType<CreateEmergencyContactInput>
+    export type CreateEmergencyContactMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add an emergency contact (notified by email on leak/low-level alerts)
+ */
+export const useCreateEmergencyContact = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEmergencyContact>>, TError,{data: BodyType<CreateEmergencyContactInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createEmergencyContact>>,
+        TError,
+        {data: BodyType<CreateEmergencyContactInput>},
+        TContext
+      > => {
+      return useMutation(getCreateEmergencyContactMutationOptions(options));
+    }
+
+export const getDeleteEmergencyContactUrl = (id: number,) => {
+
+
+
+
+  return `/api/homeowner/emergency-contacts/${id}`
+}
+
+/**
+ * @summary Remove an emergency contact
+ */
+export const deleteEmergencyContact = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteEmergencyContactUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteEmergencyContactMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEmergencyContact>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteEmergencyContact>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteEmergencyContact'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteEmergencyContact>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteEmergencyContact(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteEmergencyContactMutationResult = NonNullable<Awaited<ReturnType<typeof deleteEmergencyContact>>>
+
+    export type DeleteEmergencyContactMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove an emergency contact
+ */
+export const useDeleteEmergencyContact = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEmergencyContact>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteEmergencyContact>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteEmergencyContactMutationOptions(options));
+    }
 
 export const getGetUsageAnalyticsUrl = (params?: GetUsageAnalyticsParams,) => {
   const normalizedParams = new URLSearchParams();

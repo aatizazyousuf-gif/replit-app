@@ -4,6 +4,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
 import { AuthProvider } from '@/hooks/use-auth';
+import { usePushNotifications } from '@/hooks/use-push-notifications';
 
 // Pages
 import Login from '@/pages/Login';
@@ -53,13 +54,18 @@ function Router() {
   );
 }
 
+function AppContent() {
+  usePushNotifications();
+  return <Router />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
           <AuthProvider>
-            <Router />
+            <AppContent />
           </AuthProvider>
         </WouterRouter>
         <Toaster />
