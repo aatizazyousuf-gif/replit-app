@@ -7,3 +7,4 @@ export * from "./messages";
 export * from "./supplier_customers";
 export * from "./inventory";
 export * from "./dispatches";
+export * from "./emergency_contacts";

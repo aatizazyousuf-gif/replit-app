@@ -252,6 +252,23 @@ export interface LinkedSupplier {
   email: string;
 }
 
+export interface RegisterPushTokenInput {
+  token: string;
+}
+
+export interface EmergencyContact {
+  id: number;
+  homeownerId: number;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
+export interface CreateEmergencyContactInput {
+  name: string;
+  email: string;
+}
+
 export interface CustomerLinkInput {
   homeownerEmail: string;
 }
