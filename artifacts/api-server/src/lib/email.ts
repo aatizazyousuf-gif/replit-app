@@ -18,9 +18,12 @@ function getTransporter(): Transporter | null {
     return null;
   }
   transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    family: 4, // force IPv4 - some networks silently fail to route Gmail's IPv6 address
     auth: { user, pass },
-  });
+  } as nodemailer.TransportOptions);
   return transporter;
 }
 
