@@ -2,20 +2,34 @@ import { initializeApp, cert, getApps } from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import fs from "fs";
 
-// FIREBASE_SERVICE_ACCOUNT_JSON should contain the *entire contents* of the
-// service account JSON key downloaded from Firebase Console
-// (Project Settings > Service Accounts > Generate new private key),
-// as a single-line environment variable value.
+// Two ways to provide the Firebase service account credential - use
+// whichever is easier for you:
+//
+//   FIREBASE_SERVICE_ACCOUNT_PATH  (recommended) - the full file path to the
+//     service account JSON key you downloaded from Firebase Console. This
+//     avoids ever having to paste the JSON into a terminal command, which is
+//     easy to get subtly corrupted with very long values.
+//
+//   FIREBASE_SERVICE_ACCOUNT_JSON  - the entire JSON contents pasted
+//     directly as a single-line environment variable value. Only use this
+//     if FIREBASE_SERVICE_ACCOUNT_PATH isn't practical for some reason.
 function ensureInitialized(): boolean {
   if (getApps().length > 0) return true;
+
+  const path = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  if (!raw) {
-    console.warn("FIREBASE_SERVICE_ACCOUNT_JSON not set - push notifications are disabled.");
+
+  if (!path && !raw) {
+    console.warn("Neither FIREBASE_SERVICE_ACCOUNT_PATH nor FIREBASE_SERVICE_ACCOUNT_JSON is set - push notifications are disabled.");
     return false;
   }
+
   try {
-    const serviceAccount = JSON.parse(raw);
+    const serviceAccount = path
+      ? JSON.parse(fs.readFileSync(path, "utf8"))
+      : JSON.parse(raw!);
     initializeApp({ credential: cert(serviceAccount) });
     return true;
   } catch (err) {
