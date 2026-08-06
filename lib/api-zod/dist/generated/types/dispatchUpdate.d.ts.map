@@ -1,0 +1,1 @@
+{"version":3,"file":"dispatchUpdate.d.ts","sourceRoot":"","sources":["../../../src/generated/types/dispatchUpdate.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,oBAAoB,EAAE,MAAM,wBAAwB,CAAC;AAEnE,MAAM,WAAW,cAAc;IAC7B,MAAM,CAAC,EAAE,oBAAoB,CAAC;IAC9B,UAAU,CAAC,EAAE,MAAM,CAAC;IACpB,WAAW,CAAC,EAAE,MAAM,CAAC;IACrB,KAAK,CAAC,EAAE,MAAM,CAAC;CAChB"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"supplierSummary.d.ts","sourceRoot":"","sources":["../../../src/generated/types/supplierSummary.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,WAAW,EAAE,MAAM,eAAe,CAAC;AAEjD,MAAM,WAAW,eAAe;IAC9B,gBAAgB,EAAE,MAAM,CAAC;IACzB,aAAa,EAAE,MAAM,CAAC;IACtB,cAAc,EAAE,MAAM,CAAC;IACvB,cAAc,EAAE,MAAM,CAAC;IACvB,YAAY,EAAE,WAAW,EAAE,CAAC;CAC7B"}

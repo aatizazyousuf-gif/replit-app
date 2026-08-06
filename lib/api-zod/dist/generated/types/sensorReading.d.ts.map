@@ -1,0 +1,1 @@
+{"version":3,"file":"sensorReading.d.ts","sourceRoot":"","sources":["../../../src/generated/types/sensorReading.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AAEH,MAAM,WAAW,aAAa;IAC5B,EAAE,EAAE,MAAM,CAAC;IACX,QAAQ,EAAE,MAAM,CAAC;IACjB,eAAe,EAAE,MAAM,CAAC;IACxB,UAAU,EAAE,MAAM,CAAC;IACnB,WAAW,EAAE,OAAO,CAAC;IACrB,SAAS,EAAE,IAAI,CAAC;CACjB"}

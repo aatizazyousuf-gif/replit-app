@@ -1,0 +1,1 @@
+{"version":3,"file":"userRegistration.d.ts","sourceRoot":"","sources":["../../../src/generated/types/userRegistration.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,oBAAoB,EAAE,MAAM,wBAAwB,CAAC;AAEnE,MAAM,WAAW,gBAAgB;IAC/B,IAAI,EAAE,MAAM,CAAC;IACb,KAAK,EAAE,MAAM,CAAC;IACd,mBAAmB;IACnB,QAAQ,EAAE,MAAM,CAAC;IACjB,IAAI,EAAE,oBAAoB,CAAC;CAC5B"}
