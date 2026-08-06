@@ -1,0 +1,122 @@
+import { z } from "zod/v4";
+export declare const sensorReadingsTable: import("drizzle-orm/pg-core").PgTableWithColumns<{
+    name: "sensor_readings";
+    schema: undefined;
+    columns: {
+        id: import("drizzle-orm/pg-core").PgColumn<{
+            name: "id";
+            tableName: "sensor_readings";
+            dataType: "number";
+            columnType: "PgSerial";
+            data: number;
+            driverParam: number;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: true;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        deviceId: import("drizzle-orm/pg-core").PgColumn<{
+            name: "device_id";
+            tableName: "sensor_readings";
+            dataType: "number";
+            columnType: "PgInteger";
+            data: number;
+            driverParam: string | number;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        gasLevelPercent: import("drizzle-orm/pg-core").PgColumn<{
+            name: "gas_level_percent";
+            tableName: "sensor_readings";
+            dataType: "number";
+            columnType: "PgReal";
+            data: number;
+            driverParam: string | number;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        pressurePa: import("drizzle-orm/pg-core").PgColumn<{
+            name: "pressure_pa";
+            tableName: "sensor_readings";
+            dataType: "number";
+            columnType: "PgReal";
+            data: number;
+            driverParam: string | number;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        gasDetected: import("drizzle-orm/pg-core").PgColumn<{
+            name: "gas_detected";
+            tableName: "sensor_readings";
+            dataType: "boolean";
+            columnType: "PgBoolean";
+            data: boolean;
+            driverParam: boolean;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        createdAt: import("drizzle-orm/pg-core").PgColumn<{
+            name: "created_at";
+            tableName: "sensor_readings";
+            dataType: "date";
+            columnType: "PgTimestamp";
+            data: Date;
+            driverParam: string;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+    };
+    dialect: "pg";
+}>;
+export declare const insertSensorReadingSchema: z.ZodObject<{
+    deviceId: z.ZodInt;
+    gasLevelPercent: z.ZodNumber;
+    pressurePa: z.ZodNumber;
+    gasDetected: z.ZodOptional<z.ZodBoolean>;
+}, {
+    out: {};
+    in: {};
+}>;
+export type InsertSensorReading = z.infer<typeof insertSensorReadingSchema>;
+export type SensorReading = typeof sensorReadingsTable.$inferSelect;
+//# sourceMappingURL=sensor_readings.d.ts.map

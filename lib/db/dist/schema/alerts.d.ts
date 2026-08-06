@@ -1,0 +1,167 @@
+import { z } from "zod/v4";
+export declare const alertsTable: import("drizzle-orm/pg-core").PgTableWithColumns<{
+    name: "alerts";
+    schema: undefined;
+    columns: {
+        id: import("drizzle-orm/pg-core").PgColumn<{
+            name: "id";
+            tableName: "alerts";
+            dataType: "number";
+            columnType: "PgSerial";
+            data: number;
+            driverParam: number;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: true;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        deviceId: import("drizzle-orm/pg-core").PgColumn<{
+            name: "device_id";
+            tableName: "alerts";
+            dataType: "number";
+            columnType: "PgInteger";
+            data: number;
+            driverParam: string | number;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        userId: import("drizzle-orm/pg-core").PgColumn<{
+            name: "user_id";
+            tableName: "alerts";
+            dataType: "number";
+            columnType: "PgInteger";
+            data: number;
+            driverParam: string | number;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        type: import("drizzle-orm/pg-core").PgColumn<{
+            name: "type";
+            tableName: "alerts";
+            dataType: "string";
+            columnType: "PgText";
+            data: "offline" | "gas_leak" | "low_level" | "battery";
+            driverParam: string;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: ["gas_leak", "low_level", "battery", "offline"];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        message: import("drizzle-orm/pg-core").PgColumn<{
+            name: "message";
+            tableName: "alerts";
+            dataType: "string";
+            columnType: "PgText";
+            data: string;
+            driverParam: string;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: [string, ...string[]];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        severity: import("drizzle-orm/pg-core").PgColumn<{
+            name: "severity";
+            tableName: "alerts";
+            dataType: "string";
+            columnType: "PgText";
+            data: "info" | "warning" | "critical";
+            driverParam: string;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: ["info", "warning", "critical"];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        resolvedAt: import("drizzle-orm/pg-core").PgColumn<{
+            name: "resolved_at";
+            tableName: "alerts";
+            dataType: "date";
+            columnType: "PgTimestamp";
+            data: Date;
+            driverParam: string;
+            notNull: false;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        createdAt: import("drizzle-orm/pg-core").PgColumn<{
+            name: "created_at";
+            tableName: "alerts";
+            dataType: "date";
+            columnType: "PgTimestamp";
+            data: Date;
+            driverParam: string;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+    };
+    dialect: "pg";
+}>;
+export declare const insertAlertSchema: z.ZodObject<{
+    userId: z.ZodInt;
+    deviceId: z.ZodInt;
+    type: z.ZodEnum<{
+        offline: "offline";
+        gas_leak: "gas_leak";
+        low_level: "low_level";
+        battery: "battery";
+    }>;
+    message: z.ZodString;
+    severity: z.ZodEnum<{
+        info: "info";
+        warning: "warning";
+        critical: "critical";
+    }>;
+    resolvedAt: z.ZodOptional<z.ZodNullable<z.ZodDate>>;
+}, {
+    out: {};
+    in: {};
+}>;
+export type InsertAlert = z.infer<typeof insertAlertSchema>;
+export type Alert = typeof alertsTable.$inferSelect;
+//# sourceMappingURL=alerts.d.ts.map

@@ -1,0 +1,122 @@
+import { z } from "zod/v4";
+export declare const inventoryTable: import("drizzle-orm/pg-core").PgTableWithColumns<{
+    name: "inventory";
+    schema: undefined;
+    columns: {
+        id: import("drizzle-orm/pg-core").PgColumn<{
+            name: "id";
+            tableName: "inventory";
+            dataType: "number";
+            columnType: "PgSerial";
+            data: number;
+            driverParam: number;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: true;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        supplierId: import("drizzle-orm/pg-core").PgColumn<{
+            name: "supplier_id";
+            tableName: "inventory";
+            dataType: "number";
+            columnType: "PgInteger";
+            data: number;
+            driverParam: string | number;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        cylinderType: import("drizzle-orm/pg-core").PgColumn<{
+            name: "cylinder_type";
+            tableName: "inventory";
+            dataType: "string";
+            columnType: "PgText";
+            data: string;
+            driverParam: string;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: [string, ...string[]];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        quantityAvailable: import("drizzle-orm/pg-core").PgColumn<{
+            name: "quantity_available";
+            tableName: "inventory";
+            dataType: "number";
+            columnType: "PgInteger";
+            data: number;
+            driverParam: string | number;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        pricePerUnit: import("drizzle-orm/pg-core").PgColumn<{
+            name: "price_per_unit";
+            tableName: "inventory";
+            dataType: "number";
+            columnType: "PgReal";
+            data: number;
+            driverParam: string | number;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        updatedAt: import("drizzle-orm/pg-core").PgColumn<{
+            name: "updated_at";
+            tableName: "inventory";
+            dataType: "date";
+            columnType: "PgTimestamp";
+            data: Date;
+            driverParam: string;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+    };
+    dialect: "pg";
+}>;
+export declare const insertInventorySchema: z.ZodObject<{
+    supplierId: z.ZodInt;
+    cylinderType: z.ZodString;
+    quantityAvailable: z.ZodOptional<z.ZodInt>;
+    pricePerUnit: z.ZodOptional<z.ZodNumber>;
+}, {
+    out: {};
+    in: {};
+}>;
+export type InsertInventory = z.infer<typeof insertInventorySchema>;
+export type Inventory = typeof inventoryTable.$inferSelect;
+//# sourceMappingURL=inventory.d.ts.map
