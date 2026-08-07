@@ -28,12 +28,15 @@ router.post("/devices/:deviceId/readings", requireDeviceAuth, async (req, res): 
 
   const [reading] = await db.insert(sensorReadingsTable).values({
     deviceId,
-    gasLevelPercent: parsed.data.gasLevelPercent,
-    pressurePa: parsed.data.pressurePa,
+    leakLevelPercent: parsed.data.leakLevelPercent,
+    // Only trust tank-level/pressure data if this device actually has the
+    // sensor - otherwise store null rather than a firmware placeholder.
+    gasLevelPercent: parsed.data.gasLevelPercent ?? null,
+    pressurePa: parsed.data.pressurePa ?? null,
     gasDetected: parsed.data.gasDetected,
   }).returning();
 
-  // Auto-create alert if gas detected or level critical
+  // Auto-create alert if gas detected or tank critically low
   const [device] = await db.select().from(devicesTable).where(eq(devicesTable.id, deviceId));
   if (device) {
     let alertType: "gas_leak" | "low_level" | null = null;
@@ -41,9 +44,11 @@ router.post("/devices/:deviceId/readings", requireDeviceAuth, async (req, res): 
     if (parsed.data.gasDetected) {
       alertType = "gas_leak";
       alertMessage = "Gas detected by MQ-2 sensor. Check immediately.";
-    } else if (parsed.data.gasLevelPercent < 20) {
+    } else if (device.hasPressureSensor && parsed.data.gasLevelPercent != null && parsed.data.gasLevelPercent < 20) {
+      // Only fire a "tank running low" alert when we have a real pressure
+      // reading to base it on - never derive it from the air-leak sensor.
       alertType = "low_level";
-      alertMessage = `Gas level critically low at ${parsed.data.gasLevelPercent.toFixed(1)}%.`;
+      alertMessage = `Tank level critically low at ${parsed.data.gasLevelPercent.toFixed(1)}%.`;
     }
 
     if (alertType) {
@@ -55,7 +60,7 @@ router.post("/devices/:deviceId/readings", requireDeviceAuth, async (req, res): 
         severity: "critical",
       });
 
-      const pushTitle = alertType === "gas_leak" ? "\u26a0\ufe0f Gas Leak Detected" : "\u26a0\ufe0f Gas Level Critically Low";
+      const pushTitle = alertType === "gas_leak" ? "\u26a0\ufe0f Gas Leak Detected" : "\u26a0\ufe0f Tank Level Critically Low";
 
       // Notify the homeowner who owns the device: push + email (to the
       // account holder and every emergency contact they've added).

@@ -90,6 +90,7 @@ export const GetDevicesResponseItem = zod.object({
   "name": zod.string(),
   "status": zod.enum(['online', 'offline', 'calibrating']),
   "wifiNetwork": zod.string().nullish(),
+  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
   "createdAt": zod.coerce.date()
 })
 export const GetDevicesResponse = zod.array(GetDevicesResponseItem)
@@ -101,7 +102,8 @@ export const GetDevicesResponse = zod.array(GetDevicesResponseItem)
 export const CreateDeviceBody = zod.object({
   "deviceSerial": zod.string(),
   "name": zod.string(),
-  "wifiNetwork": zod.string().optional()
+  "wifiNetwork": zod.string().optional(),
+  "hasPressureSensor": zod.boolean().optional()
 })
 
 export const CreateDeviceResponse = zod.object({
@@ -111,6 +113,7 @@ export const CreateDeviceResponse = zod.object({
   "name": zod.string(),
   "status": zod.enum(['online', 'offline', 'calibrating']),
   "wifiNetwork": zod.string().nullish(),
+  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
   "createdAt": zod.coerce.date()
 })
 
@@ -129,6 +132,7 @@ export const GetDeviceResponse = zod.object({
   "name": zod.string(),
   "status": zod.enum(['online', 'offline', 'calibrating']),
   "wifiNetwork": zod.string().nullish(),
+  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
   "createdAt": zod.coerce.date()
 })
 
@@ -143,7 +147,8 @@ export const UpdateDeviceParams = zod.object({
 export const UpdateDeviceBody = zod.object({
   "name": zod.string().optional(),
   "status": zod.enum(['online', 'offline', 'calibrating']).optional(),
-  "wifiNetwork": zod.string().optional()
+  "wifiNetwork": zod.string().optional(),
+  "hasPressureSensor": zod.boolean().optional()
 })
 
 export const UpdateDeviceResponse = zod.object({
@@ -153,6 +158,7 @@ export const UpdateDeviceResponse = zod.object({
   "name": zod.string(),
   "status": zod.enum(['online', 'offline', 'calibrating']),
   "wifiNetwork": zod.string().nullish(),
+  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
   "createdAt": zod.coerce.date()
 })
 
@@ -177,8 +183,9 @@ export const GetReadingsParams = zod.object({
 export const GetReadingsResponseItem = zod.object({
   "id": zod.number(),
   "deviceId": zod.number(),
-  "gasLevelPercent": zod.number(),
-  "pressurePa": zod.number(),
+  "leakLevelPercent": zod.number(),
+  "gasLevelPercent": zod.number().nullish(),
+  "pressurePa": zod.number().nullish(),
   "gasDetected": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -193,16 +200,18 @@ export const CreateReadingParams = zod.object({
 })
 
 export const CreateReadingBody = zod.object({
-  "gasLevelPercent": zod.number(),
-  "pressurePa": zod.number(),
+  "leakLevelPercent": zod.number(),
+  "gasLevelPercent": zod.number().nullish(),
+  "pressurePa": zod.number().nullish(),
   "gasDetected": zod.boolean()
 })
 
 export const CreateReadingResponse = zod.object({
   "id": zod.number(),
   "deviceId": zod.number(),
-  "gasLevelPercent": zod.number(),
-  "pressurePa": zod.number(),
+  "leakLevelPercent": zod.number(),
+  "gasLevelPercent": zod.number().nullish(),
+  "pressurePa": zod.number().nullish(),
   "gasDetected": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -218,8 +227,9 @@ export const GetLatestReadingParams = zod.object({
 export const GetLatestReadingResponse = zod.object({
   "id": zod.number(),
   "deviceId": zod.number(),
-  "gasLevelPercent": zod.number(),
-  "pressurePa": zod.number(),
+  "leakLevelPercent": zod.number(),
+  "gasLevelPercent": zod.number().nullish(),
+  "pressurePa": zod.number().nullish(),
   "gasDetected": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -629,7 +639,8 @@ export const GetRevenueAnalyticsResponse = zod.array(GetRevenueAnalyticsResponse
  * @summary Homeowner dashboard summary (gas level, active alerts, active order)
  */
 export const GetHomeownerSummaryResponse = zod.object({
-  "gasLevelPercent": zod.number().nullable(),
+  "leakLevelPercent": zod.number().nullable(),
+  "gasLevelPercent": zod.number().nullish().describe('Real tank fill %, null when the device has no pressure sensor connected.'),
   "pressurePa": zod.number().nullish(),
   "gasDetected": zod.boolean().nullish(),
   "activeAlerts": zod.number(),
@@ -654,6 +665,7 @@ export const GetHomeownerSummaryResponse = zod.object({
   "name": zod.string(),
   "status": zod.enum(['online', 'offline', 'calibrating']),
   "wifiNetwork": zod.string().nullish(),
+  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
   "createdAt": zod.coerce.date()
 }).nullable(),
   "estimatedDaysLeft": zod.number().nullish()

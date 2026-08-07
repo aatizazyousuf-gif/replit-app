@@ -18,7 +18,9 @@ router.get("/supplier/customers", requireAuth, async (req, res): Promise<void> =
     const [homeowner] = await db.select().from(usersTable).where(eq(usersTable.id, link.homeownerId));
     const devices = await db.select().from(devicesTable).where(eq(devicesTable.userId, link.homeownerId));
     let gasLevelPercent: number | null = null;
-    if (devices.length > 0) {
+    // Only show a tank level if the customer's device actually has a
+    // pressure sensor - otherwise there's no real number to show them.
+    if (devices.length > 0 && devices[0].hasPressureSensor) {
       const [latestReading] = await db.select().from(sensorReadingsTable)
         .where(eq(sensorReadingsTable.deviceId, devices[0].id))
         .orderBy(desc(sensorReadingsTable.createdAt))

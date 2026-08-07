@@ -9,8 +9,11 @@
 export interface SensorReading {
   id: number;
   deviceId: number;
-  gasLevelPercent: number;
-  pressurePa: number;
+  leakLevelPercent: number;
+  /** @nullable */
+  gasLevelPercent?: number | null;
+  /** @nullable */
+  pressurePa?: number | null;
   gasDetected: boolean;
   createdAt: Date;
 }

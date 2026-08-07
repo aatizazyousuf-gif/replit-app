@@ -10,4 +10,5 @@ export interface DeviceInput {
   deviceSerial: string;
   name: string;
   wifiNetwork?: string;
+  hasPressureSensor?: boolean;
 }

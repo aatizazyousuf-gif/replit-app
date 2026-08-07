@@ -17,39 +17,43 @@ export default function HomeownerDashboard() {
     }
   });
 
-  const level = data?.gasLevelPercent ?? 0;
+  const hasTankData = data?.device?.hasPressureSensor && data?.gasLevelPercent != null;
+  const tankLevel = data?.gasLevelPercent ?? 0;
   const isDanger = data?.gasDetected;
   
   return (
     <AppLayout title="My Tank">
       <div className="space-y-6 pb-4">
         
-        {/* Main Gauge Area */}
+        {/* Main Gauge Area - real tank fill %, from the pressure sensor */}
         <div className="bg-[var(--color-surface-container-lowest)] p-6 rounded-3xl shadow-sm border border-[var(--color-outline-variant)] flex flex-col items-center relative overflow-hidden">
           {isDanger && (
             <div className="absolute inset-0 bg-[var(--color-error-container)]/20 animate-pulse pointer-events-none" />
           )}
           <div className="flex justify-between w-full mb-2">
-            <span className="text-sm font-medium text-[var(--color-on-surface-variant)] uppercase tracking-wider">Gas Level</span>
+            <span className="text-sm font-medium text-[var(--color-on-surface-variant)] uppercase tracking-wider">Tank Level</span>
             <span className="text-xs font-mono text-[var(--color-outline)]">{data?.device?.name || 'Main Tank'}</span>
           </div>
           
           {isLoading ? (
             <Skeleton className="w-[200px] h-[200px] rounded-full my-4" />
-          ) : (
-            <Gauge value={level} className="my-2" />
-          )}
-
-          <div className="flex gap-4 mt-6 w-full justify-center">
-            {isLoading ? (
-              <Skeleton className="w-20 h-6" />
-            ) : (
-              <div className="flex items-center gap-1">
-                <span className="material-icons text-sm text-[var(--color-outline)]">schedule</span>
-                <span className="text-sm font-mono text-[var(--color-on-surface)]">{data?.estimatedDaysLeft ?? '--'} days left</span>
+          ) : hasTankData ? (
+            <>
+              <Gauge value={tankLevel} className="my-2" />
+              <div className="flex gap-4 mt-6 w-full justify-center">
+                <div className="flex items-center gap-1">
+                  <span className="material-icons text-sm text-[var(--color-outline)]">schedule</span>
+                  <span className="text-sm font-mono text-[var(--color-on-surface)]">{data?.estimatedDaysLeft ?? '--'} days left</span>
+                </div>
               </div>
-            )}
-          </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+              <span className="material-icons text-3xl text-[var(--color-outline)]">sensors_off</span>
+              <span className="text-sm font-medium text-[var(--color-on-surface-variant)]">Pressure sensor not connected</span>
+              <span className="text-xs text-[var(--color-outline)] max-w-[220px]">Tank level requires the MPXV7004DP pressure sensor. Wire it up and enable it for this device to see fill % here.</span>
+            </div>
+          )}
         </div>
 
         {/* Alerts / Danger Banner */}
@@ -66,16 +70,20 @@ export default function HomeownerDashboard() {
         {/* Real-time Metrics */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="bg-[var(--color-surface-container-lowest)] border border-[var(--color-outline-variant)] shadow-sm p-4 flex flex-col gap-1">
-            <span className="text-xs font-medium text-[var(--color-on-surface-variant)] uppercase">Pressure</span>
+            <span className="text-xs font-medium text-[var(--color-on-surface-variant)] uppercase">Leak Level</span>
             {isLoading ? (
               <Skeleton className="w-16 h-8" />
             ) : (
               <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold font-mono text-[var(--color-on-surface)]">{data?.pressurePa ?? 0}</span>
-                <span className="text-xs text-[var(--color-outline)]">Pa</span>
+                <span className="text-2xl font-bold font-mono text-[var(--color-on-surface)]">{(data?.leakLevelPercent ?? 0).toFixed(0)}</span>
+                <span className="text-xs text-[var(--color-outline)]">%</span>
               </div>
             )}
-            <StatusBadge label="Normal" variant="safe" className="self-start mt-2" />
+            <StatusBadge
+              label={isDanger ? "Leak" : (data?.leakLevelPercent ?? 0) > 50 ? "Elevated" : "Clear"}
+              variant={isDanger ? "error" : (data?.leakLevelPercent ?? 0) > 50 ? "warning" : "safe"}
+              className="self-start mt-2"
+            />
           </Card>
           
           <Card className="bg-[var(--color-surface-container-lowest)] border border-[var(--color-outline-variant)] shadow-sm p-4 flex flex-col gap-1">

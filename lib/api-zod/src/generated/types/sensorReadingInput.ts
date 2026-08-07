@@ -7,7 +7,10 @@
  */
 
 export interface SensorReadingInput {
-  gasLevelPercent: number;
-  pressurePa: number;
+  leakLevelPercent: number;
+  /** @nullable */
+  gasLevelPercent?: number | null;
+  /** @nullable */
+  pressurePa?: number | null;
   gasDetected: boolean;
 }

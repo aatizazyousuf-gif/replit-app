@@ -15,19 +15,26 @@
      ship with the ESP32 board package.
   4. Upload, then open the Serial Monitor (115200 baud) to watch it run.
 
-  NOTE ON ACCURACY:
-  This firmware reports a simplified 0-100% "gas level" based on the raw
-  analog reading relative to the sensor's clean-air baseline - it is NOT
-  a calibrated ppm (parts-per-million) value. Getting true ppm out of an
-  MQ-2 requires burning it in for 24-48 hours, measuring its clean-air
-  resistance (R0), and applying the Rs/R0 curve from its datasheet. This
-  is a reasonable starting point for "is something clearly wrong" alerts,
-  not for precise concentration measurement.
-
-  NOTE ON PRESSURE:
-  You mentioned you don't have the MPXV7004DP pressure sensor yet, so
-  this firmware sends a placeholder pressurePa of 0. Search for
-  "TODO: pressure sensor" below once you add it.
+  NOTE ON THE TWO SIGNALS THIS DEVICE REPORTS:
+  These are two different things, from two different sensors - don't mix
+  them up in the app UI or in your report:
+    - "Leak level" (leakLevelPercent, below) comes from the MQ-2. It's a
+      simplified 0-100% scale based on the raw analog reading relative to
+      the sensor's clean-air baseline - it is NOT a calibrated ppm
+      (parts-per-million) value. Getting true ppm out of an MQ-2 requires
+      burning it in for 24-48 hours, measuring its clean-air resistance
+      (R0), and applying the Rs/R0 curve from its datasheet. This is a
+      reasonable starting point for "is something clearly wrong" alerts,
+      not for precise concentration measurement. It tells you whether gas
+      is present in the air right now - it says nothing about how full
+      the cylinder is.
+    - "Gas level" / tank level (gasLevelPercent, sent to the backend)
+      means how full the cylinder is, and can only come from the
+      MPXV7004DP pressure sensor. Until PRESSURE_SENSOR_CONNECTED below is
+      set to true, this firmware sends no tank-level data at all rather
+      than a fake placeholder - the app will honestly show "not
+      connected" instead of a made-up number. Search for
+      "TODO: pressure sensor" once you have the MPXV7004DP wired up.
 */
 
 #include <WiFi.h>
@@ -63,6 +70,21 @@ const int MQ2_BASELINE = 400;
 // with a small amount of butane/lighter gas near the sensor and seeing
 // what value it jumps to.
 const int MQ2_ALERT_THRESHOLD = 3300;
+
+// Set to true once the MPXV7004DP pressure sensor is physically wired up
+// and you've filled in its pin/calibration constants below. Until then,
+// leave this false - the firmware will send no tank-level data at all,
+// and the app will show "sensor not connected" instead of a fake number.
+const bool PRESSURE_SENSOR_CONNECTED = false;
+
+// TODO: pressure sensor - once PRESSURE_SENSOR_CONNECTED is true, fill
+// these in from the MPXV7004DP datasheet and your specific wiring:
+//   MPXV7004DP_PIN          - analog pin the sensor's output is wired to
+//   MPXV7004DP_MIN_PA / MAX_PA - the pressure range the sensor reports
+//   Then calibrate PRESSURE_EMPTY_PA / PRESSURE_FULL_PA against your
+//   actual cylinder (empty vs. freshly refilled) to convert pressure to
+//   a tank-level percentage.
+const int   MPXV7004DP_PIN = 35;
 // ====================================================================
 
 unsigned long lastSendTime = 0;
@@ -87,7 +109,11 @@ void setup() {
   Serial.println("Warming up MQ-2 sensor (recommended: a few minutes before readings are meaningful)...");
 }
 
-void sendReading(float gasLevelPercent, bool gasDetected, float pressurePa) {
+// hasPressureData is false whenever PRESSURE_SENSOR_CONNECTED is false -
+// in that case gasLevelPercent/pressurePa are omitted from the JSON body
+// entirely rather than sent as 0, so the backend correctly records "no
+// tank-level data" instead of a fake reading.
+void sendReading(float leakLevelPercent, bool gasDetected, bool hasPressureData, float gasLevelPercent, float pressurePa) {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi disconnected, attempting to reconnect...");
     connectWiFi();
@@ -100,8 +126,11 @@ void sendReading(float gasLevelPercent, bool gasDetected, float pressurePa) {
   http.addHeader("X-Device-Key", DEVICE_API_KEY);
 
   String body = "{";
-  body += "\"gasLevelPercent\":" + String(gasLevelPercent, 2) + ",";
-  body += "\"pressurePa\":" + String(pressurePa, 2) + ",";
+  body += "\"leakLevelPercent\":" + String(leakLevelPercent, 2) + ",";
+  if (hasPressureData) {
+    body += "\"gasLevelPercent\":" + String(gasLevelPercent, 2) + ",";
+    body += "\"pressurePa\":" + String(pressurePa, 2) + ",";
+  }
   body += "\"gasDetected\":" + String(gasDetected ? "true" : "false");
   body += "}";
 
@@ -136,17 +165,30 @@ void loop() {
   Serial.println(raw);
 
   // Simplified 0-100% scale relative to baseline (NOT calibrated ppm - see
-  // the note at the top of this file).
-  float gasLevelPercent = ((float)(raw - MQ2_BASELINE) / (4095 - MQ2_BASELINE)) * 100.0;
-  if (gasLevelPercent < 0) gasLevelPercent = 0;
-  if (gasLevelPercent > 100) gasLevelPercent = 100;
+  // the note at the top of this file). This is the LEAK signal, not a
+  // tank level.
+  float leakLevelPercent = ((float)(raw - MQ2_BASELINE) / (4095 - MQ2_BASELINE)) * 100.0;
+  if (leakLevelPercent < 0) leakLevelPercent = 0;
+  if (leakLevelPercent > 100) leakLevelPercent = 100;
 
   bool gasDetected = raw >= MQ2_ALERT_THRESHOLD;
 
-  // TODO: pressure sensor - once you wire up the MPXV7004DP, read its
-  // analog output here and convert to pascals per its datasheet, instead
-  // of sending this placeholder 0.
+  float gasLevelPercent = 0; // tank level - only meaningful if hasPressureData below
   float pressurePa = 0;
+  bool hasPressureData = false;
 
-  sendReading(gasLevelPercent, gasDetected, pressurePa);
+  if (PRESSURE_SENSOR_CONNECTED) {
+    hasPressureData = true;
+    // TODO: pressure sensor - read the MPXV7004DP's analog output on
+    // MPXV7004DP_PIN, convert to pascals per its datasheet, then convert
+    // pascals to a tank-level % using your PRESSURE_EMPTY_PA /
+    // PRESSURE_FULL_PA calibration values. This is deliberately left
+    // unimplemented until the hardware is actually in hand - don't send
+    // guessed numbers in the meantime.
+    Serial.println("PRESSURE_SENSOR_CONNECTED is true but the read/convert logic above is still a TODO.");
+  } else {
+    Serial.println("Pressure sensor not connected - sending leak data only, no tank-level reading.");
+  }
+
+  sendReading(leakLevelPercent, gasDetected, hasPressureData, gasLevelPercent, pressurePa);
 }

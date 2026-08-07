@@ -68,6 +68,8 @@ export interface Device {
   status: DeviceStatus;
   /** @nullable */
   wifiNetwork?: string | null;
+  /** Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked. */
+  hasPressureSensor: boolean;
   createdAt: string;
 }
 
@@ -75,6 +77,7 @@ export interface DeviceInput {
   deviceSerial: string;
   name: string;
   wifiNetwork?: string;
+  hasPressureSensor?: boolean;
 }
 
 export type DeviceUpdateStatus = typeof DeviceUpdateStatus[keyof typeof DeviceUpdateStatus];
@@ -90,20 +93,27 @@ export interface DeviceUpdate {
   name?: string;
   status?: DeviceUpdateStatus;
   wifiNetwork?: string;
+  hasPressureSensor?: boolean;
 }
 
 export interface SensorReading {
   id: number;
   deviceId: number;
-  gasLevelPercent: number;
-  pressurePa: number;
+  leakLevelPercent: number;
+  /** @nullable */
+  gasLevelPercent?: number | null;
+  /** @nullable */
+  pressurePa?: number | null;
   gasDetected: boolean;
   createdAt: string;
 }
 
 export interface SensorReadingInput {
-  gasLevelPercent: number;
-  pressurePa: number;
+  leakLevelPercent: number;
+  /** @nullable */
+  gasLevelPercent?: number | null;
+  /** @nullable */
+  pressurePa?: number | null;
   gasDetected: boolean;
 }
 
@@ -361,7 +371,12 @@ export interface RevenueDataPoint {
 
 export interface HomeownerSummary {
   /** @nullable */
-  gasLevelPercent: number | null;
+  leakLevelPercent: number | null;
+  /**
+     * Real tank fill %, null when the device has no pressure sensor connected.
+     * @nullable
+     */
+  gasLevelPercent?: number | null;
   /** @nullable */
   pressurePa?: number | null;
   /** @nullable */

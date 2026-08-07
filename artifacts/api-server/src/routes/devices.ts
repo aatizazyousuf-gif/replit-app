@@ -24,6 +24,7 @@ router.post("/devices", requireAuth, async (req, res): Promise<void> => {
     deviceSerial: parsed.data.deviceSerial,
     name: parsed.data.name,
     wifiNetwork: parsed.data.wifiNetwork ?? null,
+    hasPressureSensor: parsed.data.hasPressureSensor ?? false,
     apiKey: generateDeviceApiKey(),
     status: "calibrating",
   }).returning();
@@ -49,6 +50,7 @@ router.patch("/devices/:id", requireAuth, async (req, res): Promise<void> => {
   if (parsed.data.name !== undefined) updates.name = parsed.data.name;
   if (parsed.data.status !== undefined) updates.status = parsed.data.status;
   if (parsed.data.wifiNetwork !== undefined) updates.wifiNetwork = parsed.data.wifiNetwork;
+  if (parsed.data.hasPressureSensor !== undefined) updates.hasPressureSensor = parsed.data.hasPressureSensor;
   const [device] = await db.update(devicesTable).set(updates).where(and(eq(devicesTable.id, id), eq(devicesTable.userId, user.id))).returning();
   if (!device) { res.status(404).json({ error: "Not found" }); return; }
   res.json(device);

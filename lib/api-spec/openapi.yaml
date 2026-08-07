@@ -789,7 +789,7 @@ components:
     # ── Devices ───────────────────────────────────────────────────────
     Device:
       type: object
-      required: [id, userId, deviceSerial, name, status, createdAt]
+      required: [id, userId, deviceSerial, name, status, hasPressureSensor, createdAt]
       properties:
         id:           { type: integer }
         userId:       { type: integer }
@@ -797,6 +797,7 @@ components:
         name:         { type: string }
         status:       { type: string, enum: [online, offline, calibrating] }
         wifiNetwork:  { type: ["string", "null"] }
+        hasPressureSensor: { type: boolean, description: "Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked." }
         createdAt:    { type: string, format: date-time }
 
     DeviceInput:
@@ -806,6 +807,7 @@ components:
         deviceSerial: { type: string }
         name:         { type: string }
         wifiNetwork:  { type: string }
+        hasPressureSensor: { type: boolean }
 
     DeviceUpdate:
       type: object
@@ -813,26 +815,34 @@ components:
         name:        { type: string }
         status:      { type: string, enum: [online, offline, calibrating] }
         wifiNetwork: { type: string }
+        hasPressureSensor: { type: boolean }
 
     # ── Sensor Readings ───────────────────────────────────────────────
+    # Two distinct signals, from two different sensors:
+    #   - leakLevelPercent (MQ-2): is there gas in the air right now.
+    #   - gasLevelPercent (MPXV7004DP pressure): how full the tank/cylinder
+    #     is. Null until the device actually has the pressure sensor wired
+    #     up (see Device.hasPressureSensor) - never a fabricated number.
     SensorReading:
       type: object
-      required: [id, deviceId, gasLevelPercent, pressurePa, gasDetected, createdAt]
+      required: [id, deviceId, leakLevelPercent, gasDetected, createdAt]
       properties:
-        id:             { type: integer }
-        deviceId:       { type: integer }
-        gasLevelPercent: { type: number }
-        pressurePa:     { type: number }
-        gasDetected:    { type: boolean }
-        createdAt:      { type: string, format: date-time }
+        id:               { type: integer }
+        deviceId:         { type: integer }
+        leakLevelPercent: { type: number }
+        gasLevelPercent:  { type: ["number", "null"] }
+        pressurePa:       { type: ["number", "null"] }
+        gasDetected:      { type: boolean }
+        createdAt:        { type: string, format: date-time }
 
     SensorReadingInput:
       type: object
-      required: [gasLevelPercent, pressurePa, gasDetected]
+      required: [leakLevelPercent, gasDetected]
       properties:
-        gasLevelPercent: { type: number }
-        pressurePa:      { type: number }
-        gasDetected:     { type: boolean }
+        leakLevelPercent: { type: number }
+        gasLevelPercent:  { type: ["number", "null"] }
+        pressurePa:       { type: ["number", "null"] }
+        gasDetected:      { type: boolean }
 
     # ── Alerts ────────────────────────────────────────────────────────
     Alert:
@@ -1044,14 +1054,15 @@ components:
 
     HomeownerSummary:
       type: object
-      required: [gasLevelPercent, activeAlerts, activeOrder, device]
+      required: [leakLevelPercent, activeAlerts, activeOrder, device]
       properties:
-        gasLevelPercent: { type: ["number", "null"] }
-        pressurePa:      { type: ["number", "null"] }
-        gasDetected:     { type: ["boolean", "null"] }
-        activeAlerts:    { type: integer }
-        activeOrder:     { $ref: "#/components/schemas/RefillOrder", nullable: true }
-        device:          { $ref: "#/components/schemas/Device", nullable: true }
+        leakLevelPercent: { type: ["number", "null"] }
+        gasLevelPercent:  { type: ["number", "null"], description: "Real tank fill %, null when the device has no pressure sensor connected." }
+        pressurePa:       { type: ["number", "null"] }
+        gasDetected:      { type: ["boolean", "null"] }
+        activeAlerts:     { type: integer }
+        activeOrder:      { $ref: "#/components/schemas/RefillOrder", nullable: true }
+        device:           { $ref: "#/components/schemas/Device", nullable: true }
         estimatedDaysLeft: { type: ["integer", "null"] }
 
     UsageDataPoint:

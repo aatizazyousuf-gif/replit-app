@@ -15,5 +15,7 @@ export interface Device {
   status: DeviceStatus;
   /** @nullable */
   wifiNetwork?: string | null;
+  /** Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked. */
+  hasPressureSensor: boolean;
   createdAt: Date;
 }

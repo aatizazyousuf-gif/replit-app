@@ -1,6 +1,6 @@
-# [Project name]
+# Smart Gas Monitor
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+An IoT LPG/gas cylinder monitoring system: an ESP32 device with an MQ-2 gas sensor (and optionally an MPXV7004DP pressure sensor) reports readings to a backend, which alerts homeowners of leaks and low tank levels and connects them to suppliers for refill orders.
 
 ## Run & Operate
 
@@ -22,15 +22,50 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `firmware/esp32-gas-monitor/` — Arduino firmware for the ESP32 device
+- `artifacts/api-server/` — Express backend (routes in `src/routes/`)
+- `artifacts/gas-monitor/` — React + Vite + Capacitor mobile/web app
+- `lib/db/src/schema/` — Drizzle schema, source of truth for the DB shape
+- `lib/api-spec/openapi.yaml` — source of truth for the API contract; run
+  `pnpm --filter @workspace/api-spec run codegen` after editing it to
+  regenerate `lib/api-zod` and `lib/api-client-react`
+- `lib/auth.ts` — password hashing / session helpers used by the API server
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- **Leak detection and tank level are two separate signals from two
+  separate sensors, and the schema/API keep them separate:**
+  - `leakLevelPercent` — MQ-2 gas sensor, 0-100% relative to its clean-air
+    baseline (not calibrated ppm). Tells you whether gas is present in the
+    air right now. Always present on every reading.
+  - `gasLevelPercent` — MPXV7004DP pressure sensor. The tank's actual fill
+    %. **Nullable** - only populated when a device's `hasPressureSensor`
+    flag is true and the firmware actually sends it. Never defaulted to
+    `0`; the UI shows an explicit "sensor not connected" state instead of
+    a guessed number.
+  - This split exists because an earlier version conflated the two under
+    one `gasLevelPercent` field fed only by the MQ-2, so the "Gas Level"
+    gauge and the "tank running low" alert were both silently driven by
+    ambient air readings instead of real tank capacity. The firmware also
+    sent a hardcoded `pressurePa: 0` even with no pressure sensor
+    attached, which the docs/presentation described as if it were live
+    data.
+  - Once the MPXV7004DP is physically wired up: set
+    `PRESSURE_SENSOR_CONNECTED = true` in the firmware, fill in the TODO
+    pin/calibration constants there, and set `hasPressureSensor: true` on
+    the device (Setup Wizard toggle, or `PATCH /devices/:id`).
+- Sessions and password hashing (`lib/auth.ts`) are intentionally minimal
+  placeholders, not production-grade - see Gotchas below before a public
+  deploy or a security-focused review.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- **Homeowners**: monitor a gas sensor in real time, get push/email alerts
+  on a leak or (once the pressure sensor is connected) a low tank, order
+  refills from a linked supplier, add emergency contacts, and message
+  their supplier.
+- **Suppliers**: see linked customers and their tank levels (when
+  available), manage inventory, dispatch drivers, and track revenue.
 
 ## User preferences
 
@@ -38,7 +73,17 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Sessions/tokens (`lib/auth.ts`) are unsigned base64 JSON, and passwords
+  are hashed with a single hardcoded global salt - both need hardening
+  (signed sessions, per-user salted hashing) before this goes anywhere
+  someone else's data would be at risk.
+- After editing `lib/api-spec/openapi.yaml`, always run
+  `pnpm --filter @workspace/api-spec run codegen` before touching
+  frontend or backend code that uses the changed types - the generated
+  files in `lib/api-zod` / `lib/api-client-react` are not hand-edited.
+- `gasLevelPercent` on a `SensorReading` can be `null` - always check
+  `device.hasPressureSensor` (or the null itself) before displaying it as
+  a real tank level.
 
 ## Pointers
 

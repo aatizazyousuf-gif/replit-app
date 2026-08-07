@@ -10,7 +10,12 @@ import type { RefillOrder } from './refillOrder';
 
 export interface HomeownerSummary {
   /** @nullable */
-  gasLevelPercent: number | null;
+  leakLevelPercent: number | null;
+  /**
+     * Real tank fill %, null when the device has no pressure sensor connected.
+     * @nullable
+     */
+  gasLevelPercent?: number | null;
   /** @nullable */
   pressurePa?: number | null;
   /** @nullable */

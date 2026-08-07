@@ -14,6 +14,26 @@ export default function HomeownerAnalytics() {
     { query: { queryKey: getGetUsageAnalyticsQueryKey({ period }) } }
   );
 
+  // Derived from real tank-level days only (the backend omits days with no
+  // pressure-sensor data rather than sending fake zeros) - both are null
+  // when there isn't enough real data to say anything meaningful.
+  const avgDailyDrop = React.useMemo(() => {
+    if (!data || data.length < 2) return null;
+    const first = data[0].avgLevel;
+    const last = data[data.length - 1].avgLevel;
+    const drop = (first - last) / (data.length - 1);
+    return drop > 0 ? drop : null;
+  }, [data]);
+
+  const estEmptyDate = React.useMemo(() => {
+    if (!data || data.length === 0 || avgDailyDrop == null) return null;
+    const latestLevel = data[data.length - 1].avgLevel;
+    const daysLeft = Math.floor(latestLevel / avgDailyDrop);
+    const d = new Date();
+    d.setDate(d.getDate() + daysLeft);
+    return d.toLocaleDateString("default", { month: "short", day: "numeric" });
+  }, [data, avgDailyDrop]);
+
   return (
     <AppLayout title="Usage Analytics">
       <div className="space-y-6">
@@ -66,15 +86,21 @@ export default function HomeownerAnalytics() {
             <span className="material-icons text-[var(--color-secondary)] mb-2 block">insights</span>
             <h4 className="text-xs font-medium text-[var(--color-on-surface-variant)] uppercase">Avg Daily Drop</h4>
             <div className="flex items-baseline gap-1 mt-1">
-              <span className="text-xl font-bold font-mono text-[var(--color-on-surface)]">1.2</span>
-              <span className="text-xs text-[var(--color-outline)]">%</span>
+              {avgDailyDrop != null ? (
+                <>
+                  <span className="text-xl font-bold font-mono text-[var(--color-on-surface)]">{avgDailyDrop.toFixed(1)}</span>
+                  <span className="text-xs text-[var(--color-outline)]">%</span>
+                </>
+              ) : (
+                <span className="text-sm text-[var(--color-outline)]">Not enough data</span>
+              )}
             </div>
           </Card>
           <Card className="bg-[var(--color-surface-container-high)] p-4 shadow-sm border border-[var(--color-outline-variant)]">
             <span className="material-icons text-[var(--color-tertiary-container)] mb-2 block">calendar_today</span>
             <h4 className="text-xs font-medium text-[var(--color-on-surface-variant)] uppercase">Est. Empty Date</h4>
             <div className="flex items-baseline gap-1 mt-1">
-              <span className="text-sm font-bold text-[var(--color-on-surface)]">Nov 24</span>
+              <span className="text-sm font-bold text-[var(--color-on-surface)]">{estEmptyDate ?? 'Not enough data'}</span>
             </div>
           </Card>
         </div>

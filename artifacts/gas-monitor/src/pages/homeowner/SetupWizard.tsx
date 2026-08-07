@@ -12,6 +12,7 @@ export default function SetupWizard() {
   const [serial, setSerial] = useState("");
   const [ssid, setSsid] = useState("");
   const [password, setPassword] = useState("");
+  const [hasPressureSensor, setHasPressureSensor] = useState(false);
   const [calibrating, setCalibrating] = useState(false);
   const [calibrationProgress, setCalibrationProgress] = useState(0);
   const [provisioned, setProvisioned] = useState<{ id: number; apiKey: string } | null>(null);
@@ -37,7 +38,7 @@ export default function SetupWizard() {
 
   const handleComplete = () => {
     createDeviceMutation.mutate(
-      { data: { deviceSerial: serial, name: "Main Tank", wifiNetwork: ssid } },
+      { data: { deviceSerial: serial, name: "Main Tank", wifiNetwork: ssid, hasPressureSensor } },
       {
         onSuccess: (device: any) => {
           setProvisioned({ id: device.id, apiKey: device.apiKey });
@@ -101,6 +102,25 @@ export default function SetupWizard() {
                   className="w-full bg-[var(--color-surface-container-lowest)]"
                 />
               </div>
+
+              <button
+                type="button"
+                onClick={() => setHasPressureSensor(v => !v)}
+                className="w-full mt-6 flex items-center gap-3 text-left p-3 rounded-xl border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)]"
+              >
+                <span
+                  className={cn(
+                    "material-icons text-xl",
+                    hasPressureSensor ? "text-[var(--color-primary)]" : "text-[var(--color-outline)]"
+                  )}
+                >
+                  {hasPressureSensor ? "check_box" : "check_box_outline_blank"}
+                </span>
+                <div>
+                  <div className="text-sm font-medium text-[var(--color-on-surface)]">MPXV7004DP pressure sensor is wired up</div>
+                  <div className="text-xs text-[var(--color-on-surface-variant)]">Leave unchecked if you only have the MQ-2 gas sensor so far — tank level will show as unavailable until this is on.</div>
+                </div>
+              </button>
             </div>
           )}
 
@@ -110,7 +130,11 @@ export default function SetupWizard() {
                 <span className="material-icons text-4xl text-[var(--color-on-tertiary-container)]">tune</span>
               </div>
               <h2 className="text-2xl font-bold text-[var(--color-on-surface)] mb-2">Sensor Calibration</h2>
-              <p className="text-[var(--color-on-surface-variant)] mb-8">Calibrating MQ-2 gas sensor and MPXV7004DP pressure sensor. Do not unplug.</p>
+              <p className="text-[var(--color-on-surface-variant)] mb-8">
+                {hasPressureSensor
+                  ? "Calibrating MQ-2 gas sensor and MPXV7004DP pressure sensor. Do not unplug."
+                  : "Calibrating MQ-2 gas sensor. Do not unplug."}
+              </p>
               
               <div className="w-full space-y-6">
                 <div>
@@ -122,15 +146,21 @@ export default function SetupWizard() {
                     <div className="h-full bg-[var(--color-primary)] transition-all duration-200" style={{ width: `${calibrationProgress}%` }} />
                   </div>
                 </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1 font-mono text-[var(--color-on-surface-variant)]">
-                    <span>MPXV7004DP</span>
-                    <span>{Math.min(100, calibrationProgress * 1.2).toFixed(0)}%</span>
+                {hasPressureSensor ? (
+                  <div>
+                    <div className="flex justify-between text-xs mb-1 font-mono text-[var(--color-on-surface-variant)]">
+                      <span>MPXV7004DP</span>
+                      <span>{Math.min(100, calibrationProgress * 1.2).toFixed(0)}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-[var(--color-surface-dim)] rounded-full overflow-hidden">
+                      <div className="h-full bg-[var(--color-secondary)] transition-all duration-200" style={{ width: `${Math.min(100, calibrationProgress * 1.2)}%` }} />
+                    </div>
                   </div>
-                  <div className="h-2 w-full bg-[var(--color-surface-dim)] rounded-full overflow-hidden">
-                    <div className="h-full bg-[var(--color-secondary)] transition-all duration-200" style={{ width: `${Math.min(100, calibrationProgress * 1.2)}%` }} />
+                ) : (
+                  <div className="text-xs text-[var(--color-outline)] text-left bg-[var(--color-surface-container-lowest)] border border-[var(--color-outline-variant)] rounded-lg p-3">
+                    No pressure sensor selected — this device will report leak detection only. Tank-level tracking can be turned on later once the MPXV7004DP is wired up.
                   </div>
-                </div>
+                )}
               </div>
             </div>
           )}

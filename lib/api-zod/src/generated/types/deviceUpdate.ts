@@ -11,4 +11,5 @@ export interface DeviceUpdate {
   name?: string;
   status?: DeviceUpdateStatus;
   wifiNetwork?: string;
+  hasPressureSensor?: boolean;
 }
