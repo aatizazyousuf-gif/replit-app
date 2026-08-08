@@ -57,6 +57,16 @@ An IoT LPG/gas cylinder monitoring system: an ESP32 device with an MQ-2 gas sens
 - Sessions and password hashing (`lib/auth.ts`) are intentionally minimal
   placeholders, not production-grade - see Gotchas below before a public
   deploy or a security-focused review.
+- **Backend hosting is Vercel, and the DB driver is Neon's HTTP driver
+  (`@neondatabase/serverless`), not raw TCP `pg`.** Render was tried first
+  but requires a card even on its free tier; Vercel's free Hobby plan
+  doesn't. Vercel runs the backend as serverless functions rather than a
+  persistent server, which meant swapping the DB connection to an
+  HTTP-based one too (a persistent TCP pool doesn't survive between
+  short-lived function invocations). See `DEPLOYMENT.md` for the actual
+  steps, and the comment in `lib/db/src/index.ts` for why. The old
+  `app.listen(PORT)` entry point (`src/index.ts`) still works unchanged if
+  you ever move to a traditional always-on host instead.
 
 ## Product
 
