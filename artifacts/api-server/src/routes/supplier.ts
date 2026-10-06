@@ -3,6 +3,7 @@ import { eq, and, desc, gte } from "drizzle-orm";
 import { db, supplierCustomersTable, usersTable, devicesTable, sensorReadingsTable, inventoryTable, dispatchesTable, refillOrdersTable } from "@workspace/db";
 import { LinkCustomerBody, CreateInventoryItemBody, UpdateInventoryItemBody, CreateDispatchBody, UpdateDispatchBody } from "@workspace/api-zod";
 import { requireAuth } from "../lib/auth";
+import { computeTankPercent } from "../lib/tankLevel";
 
 const router = Router();
 
@@ -18,9 +19,11 @@ router.get("/supplier/customers", requireAuth, async (req, res): Promise<void> =
     const [homeowner] = await db.select().from(usersTable).where(eq(usersTable.id, link.homeownerId));
     const devices = await db.select().from(devicesTable).where(eq(devicesTable.userId, link.homeownerId));
     let gasLevelPercent: number | null = null;
-    // Only show a tank level if the customer's device actually has a
-    // pressure sensor - otherwise there's no real number to show them.
-    if (devices.length > 0 && devices[0].hasPressureSensor) {
+    // Tank level from the gas weight (manual entry or load cell). If that
+    // isn't set, fall back to a pressure-sensor reading when there is one -
+    // otherwise there's no real number to show.
+    if (devices.length > 0) gasLevelPercent = computeTankPercent(devices[0]);
+    if (gasLevelPercent == null && devices.length > 0 && devices[0].hasPressureSensor) {
       const [latestReading] = await db.select().from(sensorReadingsTable)
         .where(eq(sensorReadingsTable.deviceId, devices[0].id))
         .orderBy(desc(sensorReadingsTable.createdAt))
@@ -150,6 +153,9 @@ router.post("/supplier/dispatches", requireAuth, async (req, res): Promise<void>
   if (user.role !== "supplier") { res.status(403).json({ error: "Forbidden" }); return; }
   const parsed = CreateDispatchBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  // A supplier may only dispatch orders that were assigned to them.
+  const [order] = await db.select().from(refillOrdersTable).where(eq(refillOrdersTable.id, parsed.data.orderId));
+  if (!order || order.supplierId !== user.id) { res.status(404).json({ error: "Order not found" }); return; }
   const [dispatch] = await db.insert(dispatchesTable).values({
     supplierId: user.id,
     orderId: parsed.data.orderId,

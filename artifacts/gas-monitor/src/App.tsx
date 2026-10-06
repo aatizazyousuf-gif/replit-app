@@ -14,6 +14,7 @@ import HomeownerRefills from '@/pages/homeowner/Refills';
 import HomeownerOrder from '@/pages/homeowner/Order';
 import HomeownerChat from '@/pages/homeowner/Chat';
 import SetupWizard from '@/pages/homeowner/SetupWizard';
+import TankSetup from '@/pages/homeowner/TankSetup';
 import Settings from '@/pages/Settings';
 
 import SupplierDashboard from '@/pages/supplier/Dashboard';
@@ -35,6 +36,7 @@ function Router() {
       
       {/* Homeowner Routes */}
       <Route path="/setup" component={SetupWizard} />
+      <Route path="/tank" component={TankSetup} />
       <Route path="/dashboard" component={HomeownerDashboard} />
       <Route path="/analytics" component={HomeownerAnalytics} />
       <Route path="/refills" component={HomeownerRefills} />

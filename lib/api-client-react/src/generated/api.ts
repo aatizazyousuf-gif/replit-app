@@ -53,6 +53,7 @@ import type {
   SensorReadingInput,
   SupplierCustomer,
   SupplierSummary,
+  TankWeightInput,
   UsageDataPoint,
   User,
   UserLogin,
@@ -819,6 +820,78 @@ export const useDeleteDevice = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteDeviceMutationOptions(options));
+    }
+
+export const getUpdateTankWeightUrl = (id: number,) => {
+
+
+
+
+  return `/api/devices/${id}/tank`
+}
+
+/**
+ * @summary Set the tank capacity and the current weight of the gas in it (manual entry, until a load cell is connected)
+ */
+export const updateTankWeight = async (id: number,
+    tankWeightInput: TankWeightInput, options?: RequestInit): Promise<Device> => {
+
+  return customFetch<Device>(getUpdateTankWeightUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tankWeightInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateTankWeightMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTankWeight>>, TError,{id: number;data: BodyType<TankWeightInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTankWeight>>, TError,{id: number;data: BodyType<TankWeightInput>}, TContext> => {
+
+const mutationKey = ['updateTankWeight'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTankWeight>>, {id: number;data: BodyType<TankWeightInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateTankWeight(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTankWeightMutationResult = NonNullable<Awaited<ReturnType<typeof updateTankWeight>>>
+    export type UpdateTankWeightMutationBody = BodyType<TankWeightInput>
+    export type UpdateTankWeightMutationError = ErrorType<void>
+
+    /**
+ * @summary Set the tank capacity and the current weight of the gas in it (manual entry, until a load cell is connected)
+ */
+export const useUpdateTankWeight = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTankWeight>>, TError,{id: number;data: BodyType<TankWeightInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTankWeight>>,
+        TError,
+        {id: number;data: BodyType<TankWeightInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateTankWeightMutationOptions(options));
     }
 
 export const getGetReadingsUrl = (deviceId: number,) => {

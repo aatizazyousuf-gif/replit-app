@@ -90,6 +90,11 @@ export const GetDevicesResponseItem = zod.object({
   "name": zod.string(),
   "status": zod.enum(['online', 'offline', 'calibrating']),
   "wifiNetwork": zod.string().nullish(),
+  "tankCapacityKg": zod.number().nullish().describe('Net LPG capacity of the cylinder in kg.'),
+  "gasWeightKg": zod.number().nullish().describe('Current weight of the gas in the tank in kg (not the gross weight).'),
+  "gasWeightSource": zod.enum(['manual', 'load_cell']).describe('Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32.'),
+  "gasWeightUpdatedAt": zod.coerce.date().nullish(),
+  "lowLevelThresholdPercent": zod.number().describe('A low-level alert fires when gas left drops below this percentage.'),
   "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
   "createdAt": zod.coerce.date()
 })
@@ -113,6 +118,11 @@ export const CreateDeviceResponse = zod.object({
   "name": zod.string(),
   "status": zod.enum(['online', 'offline', 'calibrating']),
   "wifiNetwork": zod.string().nullish(),
+  "tankCapacityKg": zod.number().nullish().describe('Net LPG capacity of the cylinder in kg.'),
+  "gasWeightKg": zod.number().nullish().describe('Current weight of the gas in the tank in kg (not the gross weight).'),
+  "gasWeightSource": zod.enum(['manual', 'load_cell']).describe('Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32.'),
+  "gasWeightUpdatedAt": zod.coerce.date().nullish(),
+  "lowLevelThresholdPercent": zod.number().describe('A low-level alert fires when gas left drops below this percentage.'),
   "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
   "createdAt": zod.coerce.date()
 })
@@ -132,6 +142,11 @@ export const GetDeviceResponse = zod.object({
   "name": zod.string(),
   "status": zod.enum(['online', 'offline', 'calibrating']),
   "wifiNetwork": zod.string().nullish(),
+  "tankCapacityKg": zod.number().nullish().describe('Net LPG capacity of the cylinder in kg.'),
+  "gasWeightKg": zod.number().nullish().describe('Current weight of the gas in the tank in kg (not the gross weight).'),
+  "gasWeightSource": zod.enum(['manual', 'load_cell']).describe('Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32.'),
+  "gasWeightUpdatedAt": zod.coerce.date().nullish(),
+  "lowLevelThresholdPercent": zod.number().describe('A low-level alert fires when gas left drops below this percentage.'),
   "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
   "createdAt": zod.coerce.date()
 })
@@ -158,6 +173,11 @@ export const UpdateDeviceResponse = zod.object({
   "name": zod.string(),
   "status": zod.enum(['online', 'offline', 'calibrating']),
   "wifiNetwork": zod.string().nullish(),
+  "tankCapacityKg": zod.number().nullish().describe('Net LPG capacity of the cylinder in kg.'),
+  "gasWeightKg": zod.number().nullish().describe('Current weight of the gas in the tank in kg (not the gross weight).'),
+  "gasWeightSource": zod.enum(['manual', 'load_cell']).describe('Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32.'),
+  "gasWeightUpdatedAt": zod.coerce.date().nullish(),
+  "lowLevelThresholdPercent": zod.number().describe('A low-level alert fires when gas left drops below this percentage.'),
   "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
   "createdAt": zod.coerce.date()
 })
@@ -171,6 +191,46 @@ export const DeleteDeviceParams = zod.object({
 })
 
 export const DeleteDeviceResponse = zod.void()
+
+
+/**
+ * @summary Set the tank capacity and the current weight of the gas in it (manual entry, until a load cell is connected)
+ */
+export const UpdateTankWeightParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateTankWeightBodyTankCapacityKgExclusiveMin = 0;
+export const updateTankWeightBodyTankCapacityKgMax = 1000;
+
+export const updateTankWeightBodyGasWeightKgMin = 0;
+export const updateTankWeightBodyGasWeightKgMax = 1000;
+
+export const updateTankWeightBodyLowLevelThresholdPercentMax = 99;
+
+
+
+export const UpdateTankWeightBody = zod.object({
+  "tankCapacityKg": zod.number().gt(updateTankWeightBodyTankCapacityKgExclusiveMin).max(updateTankWeightBodyTankCapacityKgMax).describe('Net LPG capacity of the cylinder in kg.'),
+  "gasWeightKg": zod.number().min(updateTankWeightBodyGasWeightKgMin).max(updateTankWeightBodyGasWeightKgMax).describe('Weight of the gas currently in the tank in kg.'),
+  "lowLevelThresholdPercent": zod.number().min(1).max(updateTankWeightBodyLowLevelThresholdPercentMax).optional().describe('Alert when gas left is below this percentage. Defaults to the device\'s current value (20).')
+})
+
+export const UpdateTankWeightResponse = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "deviceSerial": zod.string(),
+  "name": zod.string(),
+  "status": zod.enum(['online', 'offline', 'calibrating']),
+  "wifiNetwork": zod.string().nullish(),
+  "tankCapacityKg": zod.number().nullish().describe('Net LPG capacity of the cylinder in kg.'),
+  "gasWeightKg": zod.number().nullish().describe('Current weight of the gas in the tank in kg (not the gross weight).'),
+  "gasWeightSource": zod.enum(['manual', 'load_cell']).describe('Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32.'),
+  "gasWeightUpdatedAt": zod.coerce.date().nullish(),
+  "lowLevelThresholdPercent": zod.number().describe('A low-level alert fires when gas left drops below this percentage.'),
+  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
+  "createdAt": zod.coerce.date()
+})
 
 
 /**
@@ -203,7 +263,8 @@ export const CreateReadingBody = zod.object({
   "leakLevelPercent": zod.number(),
   "gasLevelPercent": zod.number().nullish(),
   "pressurePa": zod.number().nullish(),
-  "gasDetected": zod.boolean()
+  "gasDetected": zod.boolean(),
+  "gasWeightKg": zod.number().nullish().describe('Reserved for the load cell (HX711): weight of the gas in kg. When present, it replaces the manually entered weight.')
 })
 
 export const CreateReadingResponse = zod.object({
@@ -640,7 +701,7 @@ export const GetRevenueAnalyticsResponse = zod.array(GetRevenueAnalyticsResponse
  */
 export const GetHomeownerSummaryResponse = zod.object({
   "leakLevelPercent": zod.number().nullable(),
-  "gasLevelPercent": zod.number().nullish().describe('Real tank fill %, null when the device has no pressure sensor connected.'),
+  "gasLevelPercent": zod.number().nullish().describe('Tank fill %, calculated from the gas weight and tank capacity. Null until the tank weight has been entered (or sent by a load cell).'),
   "pressurePa": zod.number().nullish(),
   "gasDetected": zod.boolean().nullish(),
   "activeAlerts": zod.number(),
@@ -665,10 +726,16 @@ export const GetHomeownerSummaryResponse = zod.object({
   "name": zod.string(),
   "status": zod.enum(['online', 'offline', 'calibrating']),
   "wifiNetwork": zod.string().nullish(),
+  "tankCapacityKg": zod.number().nullish().describe('Net LPG capacity of the cylinder in kg.'),
+  "gasWeightKg": zod.number().nullish().describe('Current weight of the gas in the tank in kg (not the gross weight).'),
+  "gasWeightSource": zod.enum(['manual', 'load_cell']).describe('Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32.'),
+  "gasWeightUpdatedAt": zod.coerce.date().nullish(),
+  "lowLevelThresholdPercent": zod.number().describe('A low-level alert fires when gas left drops below this percentage.'),
   "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
   "createdAt": zod.coerce.date()
 }).nullable(),
-  "estimatedDaysLeft": zod.number().nullish()
+  "estimatedDaysLeft": zod.number().nullish(),
+  "isTankLow": zod.boolean().optional().describe('True when gas left is below the device\'s low-level threshold.')
 })
 
 

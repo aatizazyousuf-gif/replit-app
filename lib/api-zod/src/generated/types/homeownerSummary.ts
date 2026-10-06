@@ -12,7 +12,7 @@ export interface HomeownerSummary {
   /** @nullable */
   leakLevelPercent: number | null;
   /**
-     * Real tank fill %, null when the device has no pressure sensor connected.
+     * Tank fill %, calculated from the gas weight and tank capacity. Null until the tank weight has been entered (or sent by a load cell).
      * @nullable
      */
   gasLevelPercent?: number | null;
@@ -25,4 +25,6 @@ export interface HomeownerSummary {
   device: Device | null;
   /** @nullable */
   estimatedDaysLeft?: number | null;
+  /** True when gas left is below the device's low-level threshold. */
+  isTankLow?: boolean;
 }

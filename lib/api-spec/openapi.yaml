@@ -198,6 +198,35 @@ paths:
         "204":
           description: No content
 
+  /devices/{id}/tank:
+    put:
+      operationId: updateTankWeight
+      tags: [devices]
+      summary: Set the tank capacity and the current weight of the gas in it (manual entry, until a load cell is connected)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TankWeightInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+        "400":
+          description: Invalid weight values
+        "404":
+          description: Not found
+
   # ── Sensor Readings ───────────────────────────────────────────────────
   /devices/{deviceId}/readings:
     get:
@@ -789,7 +818,7 @@ components:
     # ── Devices ───────────────────────────────────────────────────────
     Device:
       type: object
-      required: [id, userId, deviceSerial, name, status, hasPressureSensor, createdAt]
+      required: [id, userId, deviceSerial, name, status, hasPressureSensor, gasWeightSource, lowLevelThresholdPercent, createdAt]
       properties:
         id:           { type: integer }
         userId:       { type: integer }
@@ -797,6 +826,11 @@ components:
         name:         { type: string }
         status:       { type: string, enum: [online, offline, calibrating] }
         wifiNetwork:  { type: ["string", "null"] }
+        tankCapacityKg: { type: ["number", "null"], description: "Net LPG capacity of the cylinder in kg." }
+        gasWeightKg:    { type: ["number", "null"], description: "Current weight of the gas in the tank in kg (not the gross weight)." }
+        gasWeightSource: { type: string, enum: [manual, load_cell], description: "Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32." }
+        gasWeightUpdatedAt: { type: ["string", "null"], format: date-time }
+        lowLevelThresholdPercent: { type: number, description: "A low-level alert fires when gas left drops below this percentage." }
         hasPressureSensor: { type: boolean, description: "Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked." }
         createdAt:    { type: string, format: date-time }
 
@@ -816,6 +850,14 @@ components:
         status:      { type: string, enum: [online, offline, calibrating] }
         wifiNetwork: { type: string }
         hasPressureSensor: { type: boolean }
+
+    TankWeightInput:
+      type: object
+      required: [tankCapacityKg, gasWeightKg]
+      properties:
+        tankCapacityKg: { type: number, exclusiveMinimum: 0, maximum: 1000, description: "Net LPG capacity of the cylinder in kg." }
+        gasWeightKg:    { type: number, minimum: 0, maximum: 1000, description: "Weight of the gas currently in the tank in kg." }
+        lowLevelThresholdPercent: { type: number, minimum: 1, maximum: 99, description: "Alert when gas left is below this percentage. Defaults to the device's current value (20)." }
 
     # ── Sensor Readings ───────────────────────────────────────────────
     # Two distinct signals, from two different sensors:
@@ -843,6 +885,7 @@ components:
         gasLevelPercent:  { type: ["number", "null"] }
         pressurePa:       { type: ["number", "null"] }
         gasDetected:      { type: boolean }
+        gasWeightKg:      { type: ["number", "null"], description: "Reserved for the load cell (HX711): weight of the gas in kg. When present, it replaces the manually entered weight." }
 
     # ── Alerts ────────────────────────────────────────────────────────
     Alert:
@@ -1057,13 +1100,14 @@ components:
       required: [leakLevelPercent, activeAlerts, activeOrder, device]
       properties:
         leakLevelPercent: { type: ["number", "null"] }
-        gasLevelPercent:  { type: ["number", "null"], description: "Real tank fill %, null when the device has no pressure sensor connected." }
+        gasLevelPercent:  { type: ["number", "null"], description: "Tank fill %, calculated from the gas weight and tank capacity. Null until the tank weight has been entered (or sent by a load cell)." }
         pressurePa:       { type: ["number", "null"] }
         gasDetected:      { type: ["boolean", "null"] }
         activeAlerts:     { type: integer }
         activeOrder:      { $ref: "#/components/schemas/RefillOrder", nullable: true }
         device:           { $ref: "#/components/schemas/Device", nullable: true }
         estimatedDaysLeft: { type: ["integer", "null"] }
+        isTankLow:        { type: boolean, description: "True when gas left is below the device's low-level threshold." }
 
     UsageDataPoint:
       type: object

@@ -13,4 +13,9 @@ export interface SensorReadingInput {
   /** @nullable */
   pressurePa?: number | null;
   gasDetected: boolean;
+  /**
+     * Reserved for the load cell (HX711): weight of the gas in kg. When present, it replaces the manually entered weight.
+     * @nullable
+     */
+  gasWeightKg?: number | null;
 }

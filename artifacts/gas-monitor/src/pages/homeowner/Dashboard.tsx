@@ -17,7 +17,8 @@ export default function HomeownerDashboard() {
     }
   });
 
-  const hasTankData = data?.device?.hasPressureSensor && data?.gasLevelPercent != null;
+  // Tank level comes from the gas weight (typed in now, load cell later).
+  const hasTankData = data?.gasLevelPercent != null;
   const tankLevel = data?.gasLevelPercent ?? 0;
   const isDanger = data?.gasDetected;
   
@@ -25,7 +26,7 @@ export default function HomeownerDashboard() {
     <AppLayout title="My Tank">
       <div className="space-y-6 pb-4">
         
-        {/* Main Gauge Area - real tank fill %, from the pressure sensor */}
+        {/* Main Gauge Area - tank fill %, from the gas weight */}
         <div className="bg-[var(--color-surface-container-lowest)] p-6 rounded-3xl shadow-sm border border-[var(--color-outline-variant)] flex flex-col items-center relative overflow-hidden">
           {isDanger && (
             <div className="absolute inset-0 bg-[var(--color-error-container)]/20 animate-pulse pointer-events-none" />
@@ -46,12 +47,32 @@ export default function HomeownerDashboard() {
                   <span className="text-sm font-mono text-[var(--color-on-surface)]">{data?.estimatedDaysLeft ?? '--'} days left</span>
                 </div>
               </div>
+              {data?.device?.gasWeightKg != null && (
+              <div className="flex items-center justify-between w-full mt-4 pt-4 border-t border-[var(--color-outline-variant)]">
+                <div className="flex flex-col">
+                  <span className="text-sm font-mono font-bold text-[var(--color-on-surface)]">
+                    {(data?.device?.gasWeightKg ?? 0).toFixed(1)} of {(data?.device?.tankCapacityKg ?? 0).toFixed(1)} kg
+                  </span>
+                  <span className="text-xs text-[var(--color-outline)]">
+                    {data?.device?.gasWeightSource === 'load_cell' ? 'From load cell' : 'Entered manually'}
+                  </span>
+                </div>
+                <Link href="/tank" className="text-xs font-semibold px-3 py-1.5 rounded-full border border-[var(--color-outline-variant)] text-[var(--color-primary)] no-default-hover-elevate">
+                  Update weight
+                </Link>
+              </div>
+              )}
             </>
           ) : (
             <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-              <span className="material-icons text-3xl text-[var(--color-outline)]">sensors_off</span>
-              <span className="text-sm font-medium text-[var(--color-on-surface-variant)]">Pressure sensor not connected</span>
-              <span className="text-xs text-[var(--color-outline)] max-w-[220px]">Tank level requires the MPXV7004DP pressure sensor. Wire it up and enable it for this device to see fill % here.</span>
+              <span className="material-icons text-3xl text-[var(--color-outline)]">scale</span>
+              <span className="text-sm font-medium text-[var(--color-on-surface-variant)]">Tank weight not set</span>
+              <span className="text-xs text-[var(--color-outline)] max-w-[220px]">Enter how much gas is in your tank to see the level and get low-level alerts.</span>
+              {data?.device && (
+                <Link href="/tank" className="mt-2 bg-[var(--color-primary)] text-[var(--color-on-primary)] text-sm font-semibold px-4 py-2 rounded-full no-default-hover-elevate">
+                  Enter gas weight
+                </Link>
+              )}
             </div>
           )}
         </div>
@@ -64,6 +85,20 @@ export default function HomeownerDashboard() {
               <h3 className="font-bold text-[var(--color-error)]">Gas Leak Detected!</h3>
               <p className="text-sm opacity-90">Ventilate the area immediately and do not use electrical switches. Evacuate if smell is strong.</p>
             </div>
+          </div>
+        )}
+
+        {/* Low tank banner */}
+        {data?.isTankLow && (
+          <div className="bg-[var(--color-error-container)] text-[var(--color-on-error-container)] p-4 rounded-2xl flex items-start gap-3 shadow-sm border border-[var(--color-error)]/20">
+            <span className="material-icons text-2xl">propane_tank</span>
+            <div className="flex-1">
+              <h3 className="font-bold text-[var(--color-error)]">Gas is running low</h3>
+              <p className="text-sm opacity-90">Only {(data?.gasLevelPercent ?? 0).toFixed(0)}% left. Consider ordering a refill.</p>
+            </div>
+            <Link href="/order" className="text-xs font-semibold px-3 py-1.5 rounded-full bg-[var(--color-error)] text-white no-default-hover-elevate">
+              Order
+            </Link>
           </div>
         )}
 

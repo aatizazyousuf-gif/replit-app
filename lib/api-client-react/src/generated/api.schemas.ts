@@ -60,6 +60,17 @@ export const DeviceStatus = {
   calibrating: 'calibrating',
 } as const;
 
+/**
+ * Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32.
+ */
+export type DeviceGasWeightSource = typeof DeviceGasWeightSource[keyof typeof DeviceGasWeightSource];
+
+
+export const DeviceGasWeightSource = {
+  manual: 'manual',
+  load_cell: 'load_cell',
+} as const;
+
 export interface Device {
   id: number;
   userId: number;
@@ -68,6 +79,22 @@ export interface Device {
   status: DeviceStatus;
   /** @nullable */
   wifiNetwork?: string | null;
+  /**
+     * Net LPG capacity of the cylinder in kg.
+     * @nullable
+     */
+  tankCapacityKg?: number | null;
+  /**
+     * Current weight of the gas in the tank in kg (not the gross weight).
+     * @nullable
+     */
+  gasWeightKg?: number | null;
+  /** Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32. */
+  gasWeightSource: DeviceGasWeightSource;
+  /** @nullable */
+  gasWeightUpdatedAt?: string | null;
+  /** A low-level alert fires when gas left drops below this percentage. */
+  lowLevelThresholdPercent: number;
   /** Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked. */
   hasPressureSensor: boolean;
   createdAt: string;
@@ -96,6 +123,27 @@ export interface DeviceUpdate {
   hasPressureSensor?: boolean;
 }
 
+export interface TankWeightInput {
+  /**
+     * Net LPG capacity of the cylinder in kg.
+     * @maximum 1000
+     * @exclusiveMinimum 0
+     */
+  tankCapacityKg: number;
+  /**
+     * Weight of the gas currently in the tank in kg.
+     * @minimum 0
+     * @maximum 1000
+     */
+  gasWeightKg: number;
+  /**
+     * Alert when gas left is below this percentage. Defaults to the device's current value (20).
+     * @minimum 1
+     * @maximum 99
+     */
+  lowLevelThresholdPercent?: number;
+}
+
 export interface SensorReading {
   id: number;
   deviceId: number;
@@ -115,6 +163,11 @@ export interface SensorReadingInput {
   /** @nullable */
   pressurePa?: number | null;
   gasDetected: boolean;
+  /**
+     * Reserved for the load cell (HX711): weight of the gas in kg. When present, it replaces the manually entered weight.
+     * @nullable
+     */
+  gasWeightKg?: number | null;
 }
 
 export type AlertType = typeof AlertType[keyof typeof AlertType];
@@ -373,7 +426,7 @@ export interface HomeownerSummary {
   /** @nullable */
   leakLevelPercent: number | null;
   /**
-     * Real tank fill %, null when the device has no pressure sensor connected.
+     * Tank fill %, calculated from the gas weight and tank capacity. Null until the tank weight has been entered (or sent by a load cell).
      * @nullable
      */
   gasLevelPercent?: number | null;
@@ -386,6 +439,8 @@ export interface HomeownerSummary {
   device: Device | null;
   /** @nullable */
   estimatedDaysLeft?: number | null;
+  /** True when gas left is below the device's low-level threshold. */
+  isTankLow?: boolean;
 }
 
 export interface UsageDataPoint {

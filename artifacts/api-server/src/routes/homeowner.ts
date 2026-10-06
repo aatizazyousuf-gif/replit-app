@@ -2,6 +2,7 @@ import { Router } from "express";
 import { eq, and, isNull, desc } from "drizzle-orm";
 import { db, devicesTable, sensorReadingsTable, alertsTable, refillOrdersTable, supplierCustomersTable, usersTable } from "@workspace/db";
 import { requireAuth } from "../lib/auth";
+import { computeTankPercent, isTankLow } from "../lib/tankLevel";
 
 const router = Router();
 
@@ -29,8 +30,19 @@ router.get("/homeowner/summary", requireAuth, async (req, res): Promise<void> =>
   let pressurePa: number | null = null;
   let gasDetected: boolean | null = null;
   let estimatedDaysLeft: number | null = null;
+  let isTankLowNow = false;
 
   if (device) {
+    // Tank level from the gas WEIGHT (typed in by the user now, sent by a
+    // load cell later). null until a weight and capacity have been set.
+    const weightPercent = computeTankPercent(device);
+    if (weightPercent != null) {
+      gasLevelPercent = weightPercent;
+      isTankLowNow = isTankLow(device);
+      // Rough estimate: assume 1.2% tank usage per day.
+      estimatedDaysLeft = weightPercent > 0 ? Math.floor(weightPercent / 1.2) : 0;
+    }
+
     const [latest] = await db.select().from(sensorReadingsTable)
       .where(eq(sensorReadingsTable.deviceId, device.id))
       .orderBy(desc(sensorReadingsTable.createdAt))
@@ -41,7 +53,7 @@ router.get("/homeowner/summary", requireAuth, async (req, res): Promise<void> =>
       // Tank level and any estimate derived from it are only meaningful
       // once the device actually has a pressure sensor - otherwise leave
       // them null instead of showing a number with no real basis.
-      if (device.hasPressureSensor && latest.gasLevelPercent != null) {
+      if (gasLevelPercent == null && device.hasPressureSensor && latest.gasLevelPercent != null) {
         gasLevelPercent = latest.gasLevelPercent;
         pressurePa = latest.pressurePa;
         // Rough estimate: assume 1.2% tank usage per day.
@@ -71,6 +83,7 @@ router.get("/homeowner/summary", requireAuth, async (req, res): Promise<void> =>
     activeOrder: activeOrderResult,
     device: device ?? null,
     estimatedDaysLeft,
+    isTankLow: isTankLowNow,
   });
 });
 

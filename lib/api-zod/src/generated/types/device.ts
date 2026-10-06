@@ -5,6 +5,7 @@
  * Gas Monitor API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { DeviceGasWeightSource } from './deviceGasWeightSource';
 import type { DeviceStatus } from './deviceStatus';
 
 export interface Device {
@@ -15,6 +16,22 @@ export interface Device {
   status: DeviceStatus;
   /** @nullable */
   wifiNetwork?: string | null;
+  /**
+     * Net LPG capacity of the cylinder in kg.
+     * @nullable
+     */
+  tankCapacityKg?: number | null;
+  /**
+     * Current weight of the gas in the tank in kg (not the gross weight).
+     * @nullable
+     */
+  gasWeightKg?: number | null;
+  /** Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32. */
+  gasWeightSource: DeviceGasWeightSource;
+  /** @nullable */
+  gasWeightUpdatedAt?: Date | null;
+  /** A low-level alert fires when gas left drops below this percentage. */
+  lowLevelThresholdPercent: number;
   /** Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked. */
   hasPressureSensor: boolean;
   createdAt: Date;

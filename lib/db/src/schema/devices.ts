@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, real, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -15,6 +15,17 @@ export const devicesTable = pgTable("devices", {
   // or any other number) - the UI shows an honest "not connected" state
   // instead. Flip this on once the hardware is actually there.
   hasPressureSensor: boolean("has_pressure_sensor").notNull().default(false),
+  // ── Tank weight (manual entry now, load cell later) ────────────────
+  // Net LPG capacity of the cylinder in kg (e.g. 11.8 for a domestic one).
+  tankCapacityKg: real("tank_capacity_kg"),
+  // Current weight of the GAS in the tank in kg (not the gross weight).
+  // Entered by hand in the app today; a load cell (HX711) will overwrite
+  // it automatically later - see gasWeightSource.
+  gasWeightKg: real("gas_weight_kg"),
+  gasWeightSource: text("gas_weight_source", { enum: ["manual", "load_cell"] }).notNull().default("manual"),
+  gasWeightUpdatedAt: timestamp("gas_weight_updated_at", { withTimezone: true }),
+  // A "low level" alert fires when gas left drops below this percentage.
+  lowLevelThresholdPercent: real("low_level_threshold_percent").notNull().default(20),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -45,18 +45,22 @@ router.post("/refill-orders", requireAuth, async (req, res): Promise<void> => {
 });
 
 router.get("/refill-orders/:id", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as any).user;
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
   const [order] = await db.select().from(refillOrdersTable).where(eq(refillOrdersTable.id, id));
-  if (!order) { res.status(404).json({ error: "Not found" }); return; }
+  if (!order || (order.homeownerId !== user.id && order.supplierId !== user.id)) { res.status(404).json({ error: "Not found" }); return; }
   res.json(order);
 });
 
 router.patch("/refill-orders/:id", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as any).user;
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
   const parsed = UpdateRefillOrderBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  const [existing] = await db.select().from(refillOrdersTable).where(eq(refillOrdersTable.id, id));
+  if (!existing || (existing.homeownerId !== user.id && existing.supplierId !== user.id)) { res.status(404).json({ error: "Not found" }); return; }
 
   const updates: Record<string, unknown> = {};
   if (parsed.data.status !== undefined) updates.status = parsed.data.status;

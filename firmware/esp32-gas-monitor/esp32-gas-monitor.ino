@@ -85,7 +85,30 @@ const bool PRESSURE_SENSOR_CONNECTED = false;
 //   actual cylinder (empty vs. freshly refilled) to convert pressure to
 //   a tank-level percentage.
 const int   MPXV7004DP_PIN = 35;
-// ====================================================================
+
+// ---------------------- LOAD CELL (future) ----------------------
+// Until a load cell is wired up, the gas weight is typed in by the user in
+// the app ("Gas Weight" screen) and this firmware sends no weight.
+// When you add a load cell + HX711 amplifier:
+//   1. Install the "HX711" library by Rob Tillaart or bogde
+//      (Sketch > Include Library > Manage Libraries).
+//   2. Wire HX711: DT -> GPIO16, SCK -> GPIO17, VCC -> 3.3V, GND -> GND.
+//   3. Change LOAD_CELL_ENABLED below from 0 to 1.
+//   4. Calibrate LOAD_CELL_SCALE with a known weight, and set
+//      EMPTY_CYLINDER_KG to the cylinder's empty weight (the "TW" number
+//      stamped on the cylinder collar).
+// The backend then replaces the manual weight with this one automatically
+// and runs the same low-level alert.
+#define LOAD_CELL_ENABLED 0
+#if LOAD_CELL_ENABLED
+  #include <HX711.h>
+  const int   HX711_DOUT_PIN    = 16;
+  const int   HX711_SCK_PIN     = 17;
+  const float LOAD_CELL_SCALE   = 1.0;  // TODO: raw units per kg, from calibration
+  const float EMPTY_CYLINDER_KG = 0.0;  // TODO: empty cylinder weight (TW)
+  HX711 scale;
+#endif
+// =====================================================================
 
 unsigned long lastSendTime = 0;
 
@@ -105,15 +128,36 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
   pinMode(MQ2_PIN, INPUT);
+#if LOAD_CELL_ENABLED
+  scale.begin(HX711_DOUT_PIN, HX711_SCK_PIN);
+  scale.set_scale(LOAD_CELL_SCALE);
+#endif
   connectWiFi();
   Serial.println("Warming up MQ-2 sensor (recommended: a few minutes before readings are meaningful)...");
+}
+
+// Gas weight in kg from the load cell. Returns false when no load cell is
+// enabled (or it isn't ready), in which case no weight is sent and the app's
+// manually entered weight is used instead.
+bool readGasWeightKg(float &gasWeightKg) {
+#if LOAD_CELL_ENABLED
+  if (!scale.is_ready()) return false;
+  float grossKg = scale.get_units(10);          // cylinder + gas
+  if (isnan(grossKg)) return false;             // a bad reading would break the JSON
+  gasWeightKg = grossKg - EMPTY_CYLINDER_KG;    // gas only
+  if (gasWeightKg < 0) gasWeightKg = 0;
+  return true;
+#else
+  (void)gasWeightKg;
+  return false;
+#endif
 }
 
 // hasPressureData is false whenever PRESSURE_SENSOR_CONNECTED is false -
 // in that case gasLevelPercent/pressurePa are omitted from the JSON body
 // entirely rather than sent as 0, so the backend correctly records "no
 // tank-level data" instead of a fake reading.
-void sendReading(float leakLevelPercent, bool gasDetected, bool hasPressureData, float gasLevelPercent, float pressurePa) {
+void sendReading(float leakLevelPercent, bool gasDetected, bool hasPressureData, float gasLevelPercent, float pressurePa, bool hasWeightData, float gasWeightKg) {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi disconnected, attempting to reconnect...");
     connectWiFi();
@@ -130,6 +174,9 @@ void sendReading(float leakLevelPercent, bool gasDetected, bool hasPressureData,
   if (hasPressureData) {
     body += "\"gasLevelPercent\":" + String(gasLevelPercent, 2) + ",";
     body += "\"pressurePa\":" + String(pressurePa, 2) + ",";
+  }
+  if (hasWeightData) {
+    body += "\"gasWeightKg\":" + String(gasWeightKg, 3) + ",";
   }
   body += "\"gasDetected\":" + String(gasDetected ? "true" : "false");
   body += "}";
@@ -190,5 +237,15 @@ void loop() {
     Serial.println("Pressure sensor not connected - sending leak data only, no tank-level reading.");
   }
 
-  sendReading(leakLevelPercent, gasDetected, hasPressureData, gasLevelPercent, pressurePa);
+  // Load cell (optional): sends the gas weight so the app can keep the tank
+  // level and low-level alert up to date automatically.
+  float gasWeightKg = 0;
+  bool hasWeightData = readGasWeightKg(gasWeightKg);
+  if (hasWeightData) {
+    Serial.print("Gas weight (load cell): ");
+    Serial.print(gasWeightKg, 3);
+    Serial.println(" kg");
+  }
+
+  sendReading(leakLevelPercent, gasDetected, hasPressureData, gasLevelPercent, pressurePa, hasWeightData, gasWeightKg);
 }
