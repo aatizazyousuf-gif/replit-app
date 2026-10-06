@@ -6,6 +6,9 @@ import { computeTankPercent, isTankLow } from "../lib/tankLevel";
 
 const router = Router();
 
+// If the newest sensor reading is older than this, the device counts as offline.
+const STALE_READING_MS = 2 * 60 * 1000;
+
 router.get("/homeowner/supplier", requireAuth, async (req, res): Promise<void> => {
   const user = (req as any).user;
   if (user.role !== "homeowner") { res.status(403).json({ error: "Forbidden" }); return; }
@@ -31,6 +34,7 @@ router.get("/homeowner/summary", requireAuth, async (req, res): Promise<void> =>
   let gasDetected: boolean | null = null;
   let estimatedDaysLeft: number | null = null;
   let isTankLowNow = false;
+  let deviceOffline = false;
 
   if (device) {
     // Tank level from the gas WEIGHT (typed in by the user now, sent by a
@@ -47,7 +51,11 @@ router.get("/homeowner/summary", requireAuth, async (req, res): Promise<void> =>
       .where(eq(sensorReadingsTable.deviceId, device.id))
       .orderBy(desc(sensorReadingsTable.createdAt))
       .limit(1);
-    if (latest) {
+    // A reading older than this means the ESP32 is offline. Don't show an
+    // old leak state as if it were live.
+    const deviceIsLive = !!latest && Date.now() - new Date(latest.createdAt).getTime() < STALE_READING_MS;
+    deviceOffline = !deviceIsLive;
+    if (latest && deviceIsLive) {
       leakLevelPercent = latest.leakLevelPercent;
       gasDetected = latest.gasDetected;
       // Tank level and any estimate derived from it are only meaningful
@@ -81,7 +89,7 @@ router.get("/homeowner/summary", requireAuth, async (req, res): Promise<void> =>
     gasDetected,
     activeAlerts: activeAlertsList.length,
     activeOrder: activeOrderResult,
-    device: device ?? null,
+    device: device ? { ...device, status: deviceOffline ? "offline" : device.status } : null,
     estimatedDaysLeft,
     isTankLow: isTankLowNow,
   });

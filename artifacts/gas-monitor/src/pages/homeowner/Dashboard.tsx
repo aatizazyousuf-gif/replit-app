@@ -21,6 +21,8 @@ export default function HomeownerDashboard() {
   const hasTankData = data?.gasLevelPercent != null;
   const tankLevel = data?.gasLevelPercent ?? 0;
   const isDanger = data?.gasDetected;
+  // No live reading (ESP32 off or not connected): don't show a fake "Clear".
+  const noSignal = !!data?.device && data.leakLevelPercent == null;
   
   return (
     <AppLayout title="My Tank">
@@ -110,13 +112,13 @@ export default function HomeownerDashboard() {
               <Skeleton className="w-16 h-8" />
             ) : (
               <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold font-mono text-[var(--color-on-surface)]">{(data?.leakLevelPercent ?? 0).toFixed(0)}</span>
+                <span className="text-2xl font-bold font-mono text-[var(--color-on-surface)]">{noSignal ? "--" : (data?.leakLevelPercent ?? 0).toFixed(0)}</span>
                 <span className="text-xs text-[var(--color-outline)]">%</span>
               </div>
             )}
             <StatusBadge
-              label={isDanger ? "Leak" : (data?.leakLevelPercent ?? 0) > 50 ? "Elevated" : "Clear"}
-              variant={isDanger ? "error" : (data?.leakLevelPercent ?? 0) > 50 ? "warning" : "safe"}
+              label={noSignal ? "No signal" : isDanger ? "Leak" : (data?.leakLevelPercent ?? 0) > 50 ? "Elevated" : "Clear"}
+              variant={noSignal ? "warning" : isDanger ? "error" : (data?.leakLevelPercent ?? 0) > 50 ? "warning" : "safe"}
               className="self-start mt-2"
             />
           </Card>
@@ -127,11 +129,11 @@ export default function HomeownerDashboard() {
               <Skeleton className="w-16 h-8" />
             ) : (
               <div className="flex items-baseline gap-1 h-8 items-center">
-                <span className={cn("material-icons", isDanger ? "text-[var(--color-error)]" : "text-[var(--color-primary)]")}>
-                  {isDanger ? 'sensors_off' : 'sensors'}
+                <span className={cn("material-icons", isDanger ? "text-[var(--color-error)]" : noSignal ? "text-[var(--color-outline)]" : "text-[var(--color-primary)]")}>
+                  {isDanger || noSignal ? 'sensors_off' : 'sensors'}
                 </span>
                 <span className="text-sm font-bold text-[var(--color-on-surface)] ml-1">
-                  {isDanger ? 'LEAK' : 'CLEAR'}
+                  {noSignal ? 'OFFLINE' : isDanger ? 'LEAK' : 'CLEAR'}
                 </span>
               </div>
             )}
