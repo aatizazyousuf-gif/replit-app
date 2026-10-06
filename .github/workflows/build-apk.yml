@@ -29,8 +29,14 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      # GitHub's ubuntu runners already include the Android SDK (platform 36
+      # and build tools), so we don't install it again. The separate
+      # android-actions/setup-android step was failing with "Failed to find
+      # package 'tools'". We only accept the SDK licenses so Gradle can use it.
+      - name: Accept Android SDK licenses
+        run: |
+          SDKMANAGER="$(command -v sdkmanager || echo "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager")"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
