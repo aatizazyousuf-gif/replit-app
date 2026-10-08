@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq, and, isNull, desc } from "drizzle-orm";
+import { eq, and, isNull, desc, inArray } from "drizzle-orm";
 import { db, devicesTable, sensorReadingsTable, alertsTable, refillOrdersTable, supplierCustomersTable, usersTable } from "@workspace/db";
 import { requireAuth } from "../lib/auth";
 import { computeTankPercent, isTankLow } from "../lib/tankLevel";
@@ -8,6 +8,25 @@ const router = Router();
 
 // If the newest sensor reading is older than this, the device counts as offline.
 const STALE_READING_MS = 2 * 60 * 1000;
+
+// A homeowner can end up with several device rows (for example every time the
+// Setup Wizard is run). The ESP32 sends to just one of them, so show the device
+// that most recently sent a reading; if none has sent anything yet, show the
+// newest one.
+async function pickActiveDevice(userId: number) {
+  const devices = await db.select().from(devicesTable)
+    .where(eq(devicesTable.userId, userId))
+    .orderBy(desc(devicesTable.id));
+  if (devices.length === 0) return { device: undefined, latest: undefined };
+
+  const [newest] = await db.select().from(sensorReadingsTable)
+    .where(inArray(sensorReadingsTable.deviceId, devices.map((d) => d.id)))
+    .orderBy(desc(sensorReadingsTable.createdAt))
+    .limit(1);
+
+  const device = newest ? (devices.find((d) => d.id === newest.deviceId) ?? devices[0]) : devices[0];
+  return { device, latest: newest };
+}
 
 router.get("/homeowner/supplier", requireAuth, async (req, res): Promise<void> => {
   const user = (req as any).user;
@@ -26,7 +45,7 @@ router.get("/homeowner/summary", requireAuth, async (req, res): Promise<void> =>
   const user = (req as any).user;
   if (user.role !== "homeowner") { res.status(403).json({ error: "Forbidden" }); return; }
 
-  const [device] = await db.select().from(devicesTable).where(eq(devicesTable.userId, user.id));
+  const { device, latest } = await pickActiveDevice(user.id);
 
   let leakLevelPercent: number | null = null;
   let gasLevelPercent: number | null = null; // real tank fill %, pressure sensor only
@@ -47,10 +66,6 @@ router.get("/homeowner/summary", requireAuth, async (req, res): Promise<void> =>
       estimatedDaysLeft = weightPercent > 0 ? Math.floor(weightPercent / 1.2) : 0;
     }
 
-    const [latest] = await db.select().from(sensorReadingsTable)
-      .where(eq(sensorReadingsTable.deviceId, device.id))
-      .orderBy(desc(sensorReadingsTable.createdAt))
-      .limit(1);
     // A reading older than this means the ESP32 is offline. Don't show an
     // old leak state as if it were live.
     const deviceIsLive = !!latest && Date.now() - new Date(latest.createdAt).getTime() < STALE_READING_MS;
@@ -94,7 +109,7 @@ router.get("/homeowner/analytics/usage", requireAuth, async (req, res): Promise<
   const user = (req as any).user;
   if (user.role !== "homeowner") { res.status(403).json({ error: "Forbidden" }); return; }
 
-  const [device] = await db.select().from(devicesTable).where(eq(devicesTable.userId, user.id));
+  const { device } = await pickActiveDevice(user.id);
 
   if (!device) {
     // No device at all - genuinely no data, not a flat 0% week.
