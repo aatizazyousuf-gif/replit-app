@@ -95,7 +95,7 @@ export const GetDevicesResponseItem = zod.object({
   "gasWeightSource": zod.enum(['manual', 'load_cell']).describe('Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32.'),
   "gasWeightUpdatedAt": zod.coerce.date().nullish(),
   "lowLevelThresholdPercent": zod.number().describe('A low-level alert fires when gas left drops below this percentage.'),
-  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
+  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7002DP differential pressure sensor is wired up. When false, no pressure readings are shown rather than faked.'),
   "createdAt": zod.coerce.date()
 })
 export const GetDevicesResponse = zod.array(GetDevicesResponseItem)
@@ -123,7 +123,7 @@ export const CreateDeviceResponse = zod.object({
   "gasWeightSource": zod.enum(['manual', 'load_cell']).describe('Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32.'),
   "gasWeightUpdatedAt": zod.coerce.date().nullish(),
   "lowLevelThresholdPercent": zod.number().describe('A low-level alert fires when gas left drops below this percentage.'),
-  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
+  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7002DP differential pressure sensor is wired up. When false, no pressure readings are shown rather than faked.'),
   "createdAt": zod.coerce.date()
 })
 
@@ -147,7 +147,7 @@ export const GetDeviceResponse = zod.object({
   "gasWeightSource": zod.enum(['manual', 'load_cell']).describe('Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32.'),
   "gasWeightUpdatedAt": zod.coerce.date().nullish(),
   "lowLevelThresholdPercent": zod.number().describe('A low-level alert fires when gas left drops below this percentage.'),
-  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
+  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7002DP differential pressure sensor is wired up. When false, no pressure readings are shown rather than faked.'),
   "createdAt": zod.coerce.date()
 })
 
@@ -178,7 +178,7 @@ export const UpdateDeviceResponse = zod.object({
   "gasWeightSource": zod.enum(['manual', 'load_cell']).describe('Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32.'),
   "gasWeightUpdatedAt": zod.coerce.date().nullish(),
   "lowLevelThresholdPercent": zod.number().describe('A low-level alert fires when gas left drops below this percentage.'),
-  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
+  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7002DP differential pressure sensor is wired up. When false, no pressure readings are shown rather than faked.'),
   "createdAt": zod.coerce.date()
 })
 
@@ -228,7 +228,7 @@ export const UpdateTankWeightResponse = zod.object({
   "gasWeightSource": zod.enum(['manual', 'load_cell']).describe('Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32.'),
   "gasWeightUpdatedAt": zod.coerce.date().nullish(),
   "lowLevelThresholdPercent": zod.number().describe('A low-level alert fires when gas left drops below this percentage.'),
-  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
+  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7002DP differential pressure sensor is wired up. When false, no pressure readings are shown rather than faked.'),
   "createdAt": zod.coerce.date()
 })
 
@@ -731,7 +731,7 @@ export const GetHomeownerSummaryResponse = zod.object({
   "gasWeightSource": zod.enum(['manual', 'load_cell']).describe('Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32.'),
   "gasWeightUpdatedAt": zod.coerce.date().nullish(),
   "lowLevelThresholdPercent": zod.number().describe('A low-level alert fires when gas left drops below this percentage.'),
-  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked.'),
+  "hasPressureSensor": zod.boolean().describe('Whether a real MPXV7002DP differential pressure sensor is wired up. When false, no pressure readings are shown rather than faked.'),
   "createdAt": zod.coerce.date()
 }).nullable(),
   "estimatedDaysLeft": zod.number().nullish(),

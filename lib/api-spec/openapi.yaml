@@ -831,7 +831,7 @@ components:
         gasWeightSource: { type: string, enum: [manual, load_cell], description: "Where gasWeightKg came from. manual = typed in the app; load_cell = sent by the ESP32." }
         gasWeightUpdatedAt: { type: ["string", "null"], format: date-time }
         lowLevelThresholdPercent: { type: number, description: "A low-level alert fires when gas left drops below this percentage." }
-        hasPressureSensor: { type: boolean, description: "Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked." }
+        hasPressureSensor: { type: boolean, description: "Whether a real MPXV7002DP differential pressure sensor is wired up. When false, no pressure readings are shown rather than faked." }
         createdAt:    { type: string, format: date-time }
 
     DeviceInput:
@@ -862,9 +862,11 @@ components:
     # ── Sensor Readings ───────────────────────────────────────────────
     # Two distinct signals, from two different sensors:
     #   - leakLevelPercent (MQ-2): is there gas in the air right now.
-    #   - gasLevelPercent (MPXV7004DP pressure): how full the tank/cylinder
-    #     is. Null until the device actually has the pressure sensor wired
-    #     up (see Device.hasPressureSensor) - never a fabricated number.
+    #   - gasLevelPercent: how full the tank/cylinder is, calculated from the
+    #     gas weight (manual entry now, load cell later). Null until a tank
+    #     weight is known - never a fabricated number.
+    #   - pressurePa (MPXV7002DP): differential pressure in Pa. Null when the
+    #     device has no pressure sensor.
     SensorReading:
       type: object
       required: [id, deviceId, leakLevelPercent, gasDetected, createdAt]

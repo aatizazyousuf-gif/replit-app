@@ -1,6 +1,7 @@
 import React from "react";
 import { AppLayout } from "@/layouts/Layout";
 import { Gauge } from "@/components/Gauge";
+import { PressureDifference } from "@/components/PressureDifference";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,9 @@ export default function HomeownerDashboard() {
               )}
             </div>
           )}
+
+          {/* Pressure difference (kPa) and gas flow label, shown alongside the level meter */}
+          {!isLoading && data?.pressurePa != null && <PressureDifference pressurePa={data.pressurePa} />}
         </div>
 
         {/* Alerts / Danger Banner */}

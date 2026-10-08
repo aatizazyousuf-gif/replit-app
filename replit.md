@@ -1,6 +1,6 @@
 # Smart Gas Monitor
 
-An IoT LPG/gas cylinder monitoring system: an ESP32 device with an MQ-2 gas sensor (and optionally an MPXV7004DP pressure sensor) reports readings to a backend, which alerts homeowners of leaks and low tank levels and connects them to suppliers for refill orders.
+An IoT LPG/gas cylinder monitoring system: an ESP32 device with an MQ-2 gas sensor (and optionally an MPXV7002DP differential pressure sensor) reports readings to a backend, which alerts homeowners of leaks and low tank levels and connects them to suppliers for refill orders.
 
 ## Run & Operate
 
@@ -38,22 +38,14 @@ An IoT LPG/gas cylinder monitoring system: an ESP32 device with an MQ-2 gas sens
   - `leakLevelPercent` — MQ-2 gas sensor, 0-100% relative to its clean-air
     baseline (not calibrated ppm). Tells you whether gas is present in the
     air right now. Always present on every reading.
-  - `gasLevelPercent` — MPXV7004DP pressure sensor. The tank's actual fill
-    %. **Nullable** - only populated when a device's `hasPressureSensor`
-    flag is true and the firmware actually sends it. Never defaulted to
-    `0`; the UI shows an explicit "sensor not connected" state instead of
-    a guessed number.
-  - This split exists because an earlier version conflated the two under
-    one `gasLevelPercent` field fed only by the MQ-2, so the "Gas Level"
-    gauge and the "tank running low" alert were both silently driven by
-    ambient air readings instead of real tank capacity. The firmware also
-    sent a hardcoded `pressurePa: 0` even with no pressure sensor
-    attached, which the docs/presentation described as if it were live
-    data.
-  - Once the MPXV7004DP is physically wired up: set
-    `PRESSURE_SENSOR_CONNECTED = true` in the firmware, fill in the TODO
-    pin/calibration constants there, and set `hasPressureSensor: true` on
-    the device (Setup Wizard toggle, or `PATCH /devices/:id`).
+  - `gasLevelPercent` — tank fill %, calculated by the backend from the
+    gas WEIGHT (typed in on the app's Gas Weight screen now; sent by a
+    load cell later). **Nullable** until a tank weight is known.
+  - `pressurePa` — MPXV7002DP differential pressure in Pascals (about
+    +-2 kPa). Nullable; it is a pressure difference, not a tank level.
+  - Cylinder pressure cannot give an LPG fill level (it depends on
+    temperature, not on how full the cylinder is), which is why the tank
+    level comes from weight instead.
 - Sessions and password hashing (`lib/auth.ts`) are intentionally minimal
   placeholders, not production-grade - see Gotchas below before a public
   deploy or a security-focused review.

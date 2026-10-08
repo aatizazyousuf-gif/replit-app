@@ -117,7 +117,7 @@ export default function SetupWizard() {
                   {hasPressureSensor ? "check_box" : "check_box_outline_blank"}
                 </span>
                 <div>
-                  <div className="text-sm font-medium text-[var(--color-on-surface)]">MPXV7004DP pressure sensor is wired up</div>
+                  <div className="text-sm font-medium text-[var(--color-on-surface)]">MPXV7002DP pressure sensor is wired up</div>
                   <div className="text-xs text-[var(--color-on-surface-variant)]">Leave unchecked if you only have the MQ-2 gas sensor so far — tank level will show as unavailable until this is on.</div>
                 </div>
               </button>
@@ -132,7 +132,7 @@ export default function SetupWizard() {
               <h2 className="text-2xl font-bold text-[var(--color-on-surface)] mb-2">Sensor Calibration</h2>
               <p className="text-[var(--color-on-surface-variant)] mb-8">
                 {hasPressureSensor
-                  ? "Calibrating MQ-2 gas sensor and MPXV7004DP pressure sensor. Do not unplug."
+                  ? "Calibrating MQ-2 gas sensor and MPXV7002DP pressure sensor. Do not unplug."
                   : "Calibrating MQ-2 gas sensor. Do not unplug."}
               </p>
               
@@ -149,7 +149,7 @@ export default function SetupWizard() {
                 {hasPressureSensor ? (
                   <div>
                     <div className="flex justify-between text-xs mb-1 font-mono text-[var(--color-on-surface-variant)]">
-                      <span>MPXV7004DP</span>
+                      <span>MPXV7002DP</span>
                       <span>{Math.min(100, calibrationProgress * 1.2).toFixed(0)}%</span>
                     </div>
                     <div className="h-2 w-full bg-[var(--color-surface-dim)] rounded-full overflow-hidden">
@@ -158,7 +158,7 @@ export default function SetupWizard() {
                   </div>
                 ) : (
                   <div className="text-xs text-[var(--color-outline)] text-left bg-[var(--color-surface-container-lowest)] border border-[var(--color-outline-variant)] rounded-lg p-3">
-                    No pressure sensor selected — this device will report leak detection only. Tank-level tracking can be turned on later once the MPXV7004DP is wired up.
+                    No pressure sensor selected — this device will report leak detection only. Pressure readings can be turned on later once the MPXV7002DP is wired up.
                   </div>
                 )}
               </div>

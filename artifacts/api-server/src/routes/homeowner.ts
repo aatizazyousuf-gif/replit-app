@@ -58,15 +58,10 @@ router.get("/homeowner/summary", requireAuth, async (req, res): Promise<void> =>
     if (latest && deviceIsLive) {
       leakLevelPercent = latest.leakLevelPercent;
       gasDetected = latest.gasDetected;
-      // Tank level and any estimate derived from it are only meaningful
-      // once the device actually has a pressure sensor - otherwise leave
-      // them null instead of showing a number with no real basis.
-      if (gasLevelPercent == null && device.hasPressureSensor && latest.gasLevelPercent != null) {
-        gasLevelPercent = latest.gasLevelPercent;
-        pressurePa = latest.pressurePa;
-        // Rough estimate: assume 1.2% tank usage per day.
-        estimatedDaysLeft = gasLevelPercent > 0 ? Math.floor(gasLevelPercent / 1.2) : 0;
-      }
+      // Differential pressure from the MPXV7002DP (null when the device has
+      // no pressure sensor and so never sends one). This is NOT the tank
+      // level - that comes from the gas weight above.
+      pressurePa = latest.pressurePa;
     }
   }
 

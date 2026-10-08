@@ -1,8 +1,9 @@
 /*
   Smart Gas Monitor - ESP32 firmware
 
-  Reads an MQ-2 gas sensor and periodically sends readings to your
-  Smart Gas Monitor backend over WiFi.
+  Reads an MQ-2 gas (leak) sensor and an MPXV7002DP differential pressure
+  sensor (pressure drop across an orifice plate), and periodically sends
+  both to your Smart Gas Monitor backend over WiFi.
 
   SETUP:
   1. Fill in the CONFIG section below with your WiFi credentials and
@@ -10,10 +11,15 @@
      "Device Credentials" screen (Setup Wizard, final step).
   2. Wire the MQ-2 sensor's analog output (A0) to GPIO34 on the ESP32,
      VCC to 5V (or 3.3V depending on your module), and GND to GND.
-  3. In the Arduino IDE: Tools > Board > select your ESP32 board.
+     WARNING: on a 5V MQ-2 module, A0 can rise above 3.3V in gas, which
+     can damage the ESP32 pin. Put a 10k + 20k voltage divider on A0 (same
+     as the pressure sensor) or confirm your module's A0 stays below 3.3V.
+     If you add a divider, re-tune MQ2_BASELINE and MQ2_ALERT_THRESHOLD.
+  3. Wire the MPXV7002DP as shown in PRESSURE SENSOR WIRING below.
+  4. In the Arduino IDE: Tools > Board > select your ESP32 board.
      No extra libraries need installing - WiFi.h and HTTPClient.h
      ship with the ESP32 board package.
-  4. Upload, then open the Serial Monitor (115200 baud) to watch it run.
+  5. Upload, then open the Serial Monitor (115200 baud) to watch it run.
 
   NOTE ON THE TWO SIGNALS THIS DEVICE REPORTS:
   These are two different things, from two different sensors - don't mix
@@ -28,13 +34,34 @@
       not for precise concentration measurement. It tells you whether gas
       is present in the air right now - it says nothing about how full
       the cylinder is.
-    - "Gas level" / tank level (gasLevelPercent, sent to the backend)
-      means how full the cylinder is, and can only come from the
-      MPXV7004DP pressure sensor. Until PRESSURE_SENSOR_CONNECTED below is
-      set to true, this firmware sends no tank-level data at all rather
-      than a fake placeholder - the app will honestly show "not
-      connected" instead of a made-up number. Search for
-      "TODO: pressure sensor" once you have the MPXV7004DP wired up.
+    - "Gas level" / tank level (shown in the app) comes from the gas
+      WEIGHT: typed in by the user on the app's "Gas Weight" screen, or
+      sent automatically by a load cell later (see LOAD CELL below).
+    - "Pressure" (pressurePa) comes from the MPXV7002DP differential
+      pressure sensor. It reads only about +-2 kPa, so it measures a small
+      pressure DIFFERENCE (for example across an orifice in the gas line,
+      to estimate flow). Never connect it directly to the cylinder or the
+      regulator output. It is NOT a tank level - cylinder pressure does
+      not tell you how full an LPG cylinder is.
+
+  PRESSURE SENSOR WIRING (MPXV7002DP breakout board):
+    +5V    -> ESP32 VIN (5V)
+    GND    -> ESP32 GND
+    ANALOG -> 10k resistor -> GPIO35, and from GPIO35 two 10k resistors in
+              series (20k total) to GND. This divider scales 0.5-4.5V
+              down to 0.33-3.0V so the ESP32 pin is safe.
+  Keep BOTH sensor ports open to air while the ESP32 starts: it measures
+  the zero point at boot.
+
+  ORIFICE PLATE PLUMBING (pressure drop):
+    The sensor has two ports and reports the DIFFERENCE between them.
+    Connect the port that gives a POSITIVE reading when you blow into it to
+    the tap BEFORE the orifice plate (upstream), and the other port to the
+    tap AFTER the plate (downstream). Gas flowing through the orifice then
+    shows as a positive pressure drop in the app. If you get negative
+    numbers while gas flows, swap the two tubes or set PRESSURE_REVERSED to
+    true below. One sensor cannot report the "before" and "after"
+    pressures separately - only their difference.
 */
 
 #include <WiFi.h>
@@ -54,7 +81,7 @@ const int   DEVICE_ID      = 0;               // e.g. 1
 const char* DEVICE_API_KEY = "YOUR_DEVICE_API_KEY_HERE";
 
 // How often to send a reading (milliseconds)
-const unsigned long SEND_INTERVAL_MS = 3000; // 30 seconds
+const unsigned long SEND_INTERVAL_MS = 3000; // 3 seconds (use 30000 for 30 s)
 
 // MQ-2 analog input pin (ADC1 pins only: 32-39 - avoids WiFi/ADC2 conflicts)
 const int MQ2_PIN = 34;
@@ -71,20 +98,15 @@ const int MQ2_BASELINE = 400;
 // what value it jumps to.
 const int MQ2_ALERT_THRESHOLD = 3300;
 
-// Set to true once the MPXV7004DP pressure sensor is physically wired up
-// and you've filled in its pin/calibration constants below. Until then,
-// leave this false - the firmware will send no tank-level data at all,
-// and the app will show "sensor not connected" instead of a fake number.
-const bool PRESSURE_SENSOR_CONNECTED = false;
+// MPXV7002DP pressure sensor. Set to false if it is not wired up - the
+// firmware then sends no pressure data at all (never a fake number).
+const bool PRESSURE_SENSOR_CONNECTED = true;
+const int   PRESSURE_PIN = 35;      // ADC1 pin, see wiring in the header
+const float PRESSURE_SUPPLY_V = 5.0; // sensor supply (ESP32 VIN, about 4.7-5.0 V)
+const float PRESSURE_DIVIDER  = 1.5; // undo the 10k/20k divider (x 1.5)
+const bool  PRESSURE_REVERSED = false; // true = flip the sign (tubes plugged the other way round)
 
-// TODO: pressure sensor - once PRESSURE_SENSOR_CONNECTED is true, fill
-// these in from the MPXV7004DP datasheet and your specific wiring:
-//   MPXV7004DP_PIN          - analog pin the sensor's output is wired to
-//   MPXV7004DP_MIN_PA / MAX_PA - the pressure range the sensor reports
-//   Then calibrate PRESSURE_EMPTY_PA / PRESSURE_FULL_PA against your
-//   actual cylinder (empty vs. freshly refilled) to convert pressure to
-//   a tank-level percentage.
-const int   MPXV7004DP_PIN = 35;
+float pressureZeroMv = 0;            // pin millivolts at zero pressure (set at boot)
 
 // ---------------------- LOAD CELL (future) ----------------------
 // Until a load cell is wired up, the gas weight is typed in by the user in
@@ -124,10 +146,39 @@ void connectWiFi() {
   Serial.println(WiFi.localIP());
 }
 
+// Average several ADC readings (in millivolts) to reduce noise.
+float readPressureMv(int samples) {
+  long sum = 0;
+  for (int i = 0; i < samples; i++) {
+    sum += analogReadMilliVolts(PRESSURE_PIN);
+    delay(2);
+  }
+  return sum / (float)samples;
+}
+
+// Differential pressure in Pascals (positive/negative depending on which
+// port has the higher pressure). MPXV7002DP: Vout = Vs * (0.2 * kPa + 0.5),
+// so the output changes by 0.2 * Vs volts per kPa.
+float readPressurePa() {
+  float mv = readPressureMv(20);
+  float deltaV = (mv - pressureZeroMv) * PRESSURE_DIVIDER / 1000.0;
+  float kPa = deltaV / (0.2 * PRESSURE_SUPPLY_V);
+  float pa = kPa * 1000.0;
+  return PRESSURE_REVERSED ? -pa : pa;
+}
+
 void setup() {
   Serial.begin(115200);
   delay(1000);
   pinMode(MQ2_PIN, INPUT);
+  if (PRESSURE_SENSOR_CONNECTED) {
+    analogSetPinAttenuation(PRESSURE_PIN, ADC_11db);
+    Serial.println("Measuring pressure sensor zero point - keep both ports open to air...");
+    delay(1500);
+    pressureZeroMv = readPressureMv(300);
+    Serial.print("Pressure zero point (mV at pin): ");
+    Serial.println(pressureZeroMv);
+  }
 #if LOAD_CELL_ENABLED
   scale.begin(HX711_DOUT_PIN, HX711_SCK_PIN);
   scale.set_scale(LOAD_CELL_SCALE);
@@ -153,11 +204,12 @@ bool readGasWeightKg(float &gasWeightKg) {
 #endif
 }
 
-// hasPressureData is false whenever PRESSURE_SENSOR_CONNECTED is false -
-// in that case gasLevelPercent/pressurePa are omitted from the JSON body
-// entirely rather than sent as 0, so the backend correctly records "no
-// tank-level data" instead of a fake reading.
-void sendReading(float leakLevelPercent, bool gasDetected, bool hasPressureData, float gasLevelPercent, float pressurePa, bool hasWeightData, float gasWeightKg) {
+// hasPressureData is false when PRESSURE_SENSOR_CONNECTED is false - then
+// pressurePa is left out of the JSON entirely instead of being sent as 0, so
+// the backend records "no pressure data" rather than a fake reading. The same
+// goes for gasWeightKg (load cell). The tank level itself is never sent from
+// here: the backend calculates it from the gas weight.
+void sendReading(float leakLevelPercent, bool gasDetected, bool hasPressureData, float pressurePa, bool hasWeightData, float gasWeightKg) {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi disconnected, attempting to reconnect...");
     connectWiFi();
@@ -172,7 +224,6 @@ void sendReading(float leakLevelPercent, bool gasDetected, bool hasPressureData,
   String body = "{";
   body += "\"leakLevelPercent\":" + String(leakLevelPercent, 2) + ",";
   if (hasPressureData) {
-    body += "\"gasLevelPercent\":" + String(gasLevelPercent, 2) + ",";
     body += "\"pressurePa\":" + String(pressurePa, 2) + ",";
   }
   if (hasWeightData) {
@@ -220,21 +271,17 @@ void loop() {
 
   bool gasDetected = raw >= MQ2_ALERT_THRESHOLD;
 
-  float gasLevelPercent = 0; // tank level - only meaningful if hasPressureData below
   float pressurePa = 0;
   bool hasPressureData = false;
 
   if (PRESSURE_SENSOR_CONNECTED) {
-    hasPressureData = true;
-    // TODO: pressure sensor - read the MPXV7004DP's analog output on
-    // MPXV7004DP_PIN, convert to pascals per its datasheet, then convert
-    // pascals to a tank-level % using your PRESSURE_EMPTY_PA /
-    // PRESSURE_FULL_PA calibration values. This is deliberately left
-    // unimplemented until the hardware is actually in hand - don't send
-    // guessed numbers in the meantime.
-    Serial.println("PRESSURE_SENSOR_CONNECTED is true but the read/convert logic above is still a TODO.");
+    pressurePa = readPressurePa();
+    hasPressureData = !isnan(pressurePa);
+    Serial.print("Pressure drop across orifice (before - after): ");
+    Serial.print(pressurePa, 1);
+    Serial.println(" Pa");
   } else {
-    Serial.println("Pressure sensor not connected - sending leak data only, no tank-level reading.");
+    Serial.println("Pressure sensor not connected - not sending pressure data.");
   }
 
   // Load cell (optional): sends the gas weight so the app can keep the tank
@@ -247,5 +294,5 @@ void loop() {
     Serial.println(" kg");
   }
 
-  sendReading(leakLevelPercent, gasDetected, hasPressureData, gasLevelPercent, pressurePa, hasWeightData, gasWeightKg);
+  sendReading(leakLevelPercent, gasDetected, hasPressureData, pressurePa, hasWeightData, gasWeightKg);
 }

@@ -32,7 +32,7 @@ export interface Device {
   gasWeightUpdatedAt?: Date | null;
   /** A low-level alert fires when gas left drops below this percentage. */
   lowLevelThresholdPercent: number;
-  /** Whether a real MPXV7004DP pressure sensor is wired up. When false, tank-level (gasLevelPercent) readings are unavailable rather than faked. */
+  /** Whether a real MPXV7002DP differential pressure sensor is wired up. When false, no pressure readings are shown rather than faked. */
   hasPressureSensor: boolean;
   createdAt: Date;
 }
